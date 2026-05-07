@@ -7,19 +7,20 @@ import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import Loader from '../../components/ui/Loader';
+import Toast from 'react-native-toast-message';
 
 const { height } = Dimensions.get('window');
 
 const schema = yup.object().shape({
   fullName: yup.string().min(2, 'Name is too short').required('Full name is required'),
   email: yup.string().email('Invalid email address').required('Email is required'),
-  password: yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
+  password: yup.string().min(6, 'Password must be at least 6 characters').max(72, 'Password cannot exceed 72 characters').required('Password is required'),
 });
 
 const SignupScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  
   const { register } = useAuth();
   const navigation = useNavigation<any>();
 
@@ -36,8 +37,18 @@ const SignupScreen = () => {
     setIsSubmitting(true);
     try {
       await register(data.fullName, data.email, data.password);
-    } catch (error) {
-      console.error("[SIGNUP] Error:", error);
+      Toast.show({
+        type: 'success',
+        text1: 'Account Created',
+        text2: 'Welcome to Smart Recipe Manager!',
+      });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.detail || 'Something went wrong during registration.';
+      Toast.show({
+        type: 'error',
+        text1: 'Signup Failed',
+        text2: errorMessage,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -46,21 +57,21 @@ const SignupScreen = () => {
   return (
     <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
       <Loader visible={isSubmitting} message="Creating account..." />
-
+      
       {/* Background Split */}
       <View style={{ height: height * 0.5, backgroundColor: '#4F47E5', position: 'absolute', top: 0, left: 0, right: 0 }} />
-
-      <KeyboardAvoidingView
+      
+      <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
           {/* Top Section */}
           <View style={{ height: height * 0.35, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
-            <View style={{ width: 64, height: 64, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
-                   <CookingPot size={42} color="white" />
+            <View style={{ marginBottom: 24 }}>
+              <CookingPot size={52} color="white" />
             </View>
-            <Text style={{ color: 'white', fontFamily: 'Figtree_700Bold', fontSize: 30, textAlign: 'center' }}>
+            <Text style={{ color: 'white', fontFamily: 'Figtree_700Bold', fontSize: 32, textAlign: 'center' }}>
               Join Us
             </Text>
             <Text style={{ color: 'rgba(255, 255, 255, 0.8)', fontFamily: 'Figtree_500Medium', marginTop: 8, textAlign: 'center' }}>
@@ -70,8 +81,8 @@ const SignupScreen = () => {
 
           {/* Form Card */}
           <View style={{ paddingHorizontal: 24, marginTop: -40 }}>
-            <View
-              style={{
+            <View 
+              style={{ 
                 backgroundColor: '#ffffff',
                 borderRadius: 12,
                 padding: 32,
@@ -170,7 +181,7 @@ const SignupScreen = () => {
                 </View>
 
                 {/* Signup Button */}
-                <TouchableOpacity
+                <TouchableOpacity 
                   onPress={handleSubmit(onSubmit)}
                   activeOpacity={0.9}
                   style={{ backgroundColor: '#4F47E5', height: 56, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginTop: 24, shadowColor: '#4F47E5', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 }}
@@ -180,9 +191,9 @@ const SignupScreen = () => {
 
                 {/* Footer */}
                 <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 24 }}>
-                  <Text style={{ color: '#64748b', fontFamily: 'Figtree_500Medium', fontSize: 12 }}>Already have an account? </Text>
+                  <Text style={{ color: '#64748b', fontFamily: 'Figtree_500Medium', fontSize: 14 }}>Already have an account? </Text>
                   <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                    <Text style={{ color: '#4F47E5', fontFamily: 'Figtree_700Bold', fontSize: 12 }}>Log In</Text>
+                    <Text style={{ color: '#4F47E5', fontFamily: 'Figtree_700Bold', fontSize: 14 }}>Log In</Text>
                   </TouchableOpacity>
                 </View>
               </View>

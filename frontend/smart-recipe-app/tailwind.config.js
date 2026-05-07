@@ -7,13 +7,29 @@ module.exports = {
       colors: {
         background: "#ffffff",
         foreground: "#0f172a",
+        card: {
+          DEFAULT: "#ffffff",
+          foreground: "#0f172a",
+        },
+        popover: {
+          DEFAULT: "#ffffff",
+          foreground: "#0f172a",
+        },
         primary: {
           DEFAULT: "#4F47E5",
           foreground: "#ffffff",
         },
+        secondary: {
+          DEFAULT: "#f1f5f9",
+          foreground: "#1e293b",
+        },
         muted: {
           DEFAULT: "#f1f5f9",
           foreground: "#64748b",
+        },
+        accent: {
+          DEFAULT: "#f1f5f9",
+          foreground: "#1e293b",
         },
         destructive: {
           DEFAULT: "#ef4444",

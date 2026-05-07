@@ -1,24 +1,25 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Dimensions } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
-import { Mail, Lock, ArrowRight, Eye, EyeOff, Sparkles, CookingPot } from 'lucide-react-native';
+import { Mail, Lock, Eye, EyeOff, CookingPot } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import Loader from '../../components/ui/Loader';
+import Toast from 'react-native-toast-message';
 
 const { height } = Dimensions.get('window');
 
 const schema = yup.object().shape({
   email: yup.string().email('Invalid email address').required('Email is required'),
-  password: yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
+  password: yup.string().min(6, 'Password must be at least 6 characters').max(72, 'Password cannot exceed 72 characters').required('Password is required'),
 });
 
 const LoginScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  
   const { login } = useAuth();
   const navigation = useNavigation<any>();
 
@@ -34,64 +35,77 @@ const LoginScreen = () => {
     setIsSubmitting(true);
     try {
       await login(data.email, data.password);
-    } catch (error) {
-      console.error("[LOGIN] Error:", error);
+      Toast.show({
+        type: 'success',
+        text1: 'Welcome back!',
+        text2: 'You have successfully logged in.',
+      });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.detail || 'Invalid email or password. Please try again.';
+      Toast.show({
+        type: 'error',
+        text1: 'Login Failed',
+        text2: errorMessage,
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <View className="flex-1 bg-white">
+    <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
       <Loader visible={isSubmitting} message="Authenticating..." />
-
+      
       {/* Background Split */}
-      <View style={{ height: height * 0.5, backgroundColor: '#4F47E5' }} className="absolute top-0 left-0 right-0" />
-
-      <KeyboardAvoidingView
+      <View style={{ height: height * 0.5, backgroundColor: '#4F47E5', position: 'absolute', top: 0, left: 0, right: 0 }} />
+      
+      <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
+        style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-          {/* Top Section (on Primary) */}
-          <View style={{ height: height * 0.4 }} className="items-center justify-center px-8">
-            <View className="rounded-2xl items-center justify-center mb-6">
-              <CookingPot size={42} color="white" />
+          {/* Top Section */}
+          <View style={{ height: height * 0.4, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
+            <View style={{ marginBottom: 24 }}>
+              <CookingPot size={52} color="white" />
             </View>
-            <Text className="text-white font-sans-bold text-5xl text-center">
+            <Text style={{ color: 'white', fontFamily: 'Figtree_700Bold', fontSize: 32, textAlign: 'center' }}>
               Sign in to your account
             </Text>
-            <Text className="text-white/80 font-sans-medium mt-2 text-center">
-             Enter your email and password to login
+            <Text style={{ color: 'rgba(255, 255, 255, 0.8)', fontFamily: 'Figtree_500Medium', marginTop: 8, textAlign: 'center' }}>
+              Enter your email and password to login
             </Text>
           </View>
 
-          {/* Form Card (In the Middle) */}
-          <View className="px-6 -mt-12">
-            <View
-              style={{
+          {/* Form Card */}
+          <View style={{ paddingHorizontal: 24, marginTop: -40 }}>
+            <View 
+              style={{ 
                 backgroundColor: '#ffffff',
+                borderRadius: 12,
+                padding: 32,
+                borderWidth: 1,
+                borderColor: 'rgba(226, 232, 240, 0.5)',
                 shadowColor: "#000",
                 shadowOffset: { width: 0, height: 10 },
                 shadowOpacity: 0.1,
                 shadowRadius: 20,
                 elevation: 10
               }}
-              className="rounded-xl p-8 border border-border/50"
             >
-              <View className="space-y-5">
+              <View>
                 {/* Email Input */}
                 <View>
                   <Controller
                     control={control}
                     name="email"
                     render={({ field: { onChange, onBlur, value } }) => (
-                      <View className={`bg-muted/30 rounded-lg px-4 py-3 flex-row items-center border ${errors.email ? 'border-destructive/50' : 'border-border'}`}>
+                      <View style={{ backgroundColor: 'rgba(241, 245, 249, 0.3)', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: errors.email ? 'rgba(239, 68, 68, 0.5)' : '#e2e8f0' }}>
                         <Mail size={18} color="#64748b" />
                         <TextInput
                           placeholder="Email Address"
                           placeholderTextColor="#94a3b8"
-                          className="flex-1 ml-3 font-sans-medium text-foreground text-sm"
+                          style={{ flex: 1, marginLeft: 12, fontFamily: 'Figtree_500Medium', color: '#0f172a', fontSize: 14 }}
                           onBlur={onBlur}
                           onChangeText={onChange}
                           value={value}
@@ -102,24 +116,24 @@ const LoginScreen = () => {
                     )}
                   />
                   {errors.email && (
-                    <Text className="text-destructive font-sans-medium text-[10px] mt-1 ml-1">
+                    <Text style={{ color: '#ef4444', fontFamily: 'Figtree_500Medium', fontSize: 10, marginTop: 4, marginLeft: 4 }}>
                       {errors.email.message}
                     </Text>
                   )}
                 </View>
 
                 {/* Password Input */}
-                <View className="mt-4">
+                <View style={{ marginTop: 16 }}>
                   <Controller
                     control={control}
                     name="password"
                     render={({ field: { onChange, onBlur, value } }) => (
-                      <View className={`bg-muted/30 rounded-lg px-4 py-3 flex-row items-center border ${errors.password ? 'border-destructive/50' : 'border-border'}`}>
+                      <View style={{ backgroundColor: 'rgba(241, 245, 249, 0.3)', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: errors.password ? 'rgba(239, 68, 68, 0.5)' : '#e2e8f0' }}>
                         <Lock size={18} color="#64748b" />
                         <TextInput
                           placeholder="Password"
                           placeholderTextColor="#94a3b8"
-                          className="flex-1 ml-3 font-sans-medium text-foreground text-sm"
+                          style={{ flex: 1, marginLeft: 12, fontFamily: 'Figtree_500Medium', color: '#0f172a', fontSize: 14 }}
                           onBlur={onBlur}
                           onChangeText={onChange}
                           value={value}
@@ -132,30 +146,30 @@ const LoginScreen = () => {
                     )}
                   />
                   {errors.password && (
-                    <Text className="text-destructive font-sans-medium text-[10px] mt-1 ml-1">
+                    <Text style={{ color: '#ef4444', fontFamily: 'Figtree_500Medium', fontSize: 10, marginTop: 4, marginLeft: 4 }}>
                       {errors.password.message}
                     </Text>
                   )}
-
-                  <TouchableOpacity className="mt-3 items-end">
-                    <Text className="text-primary font-sans-semibold text-xs">Forgot Password?</Text>
+                  
+                  <TouchableOpacity style={{ marginTop: 12, alignItems: 'flex-end' }}>
+                    <Text style={{ color: '#4F47E5', fontFamily: 'Figtree_600SemiBold', fontSize: 12 }}>Forgot Password?</Text>
                   </TouchableOpacity>
                 </View>
 
                 {/* Login Button */}
-                <TouchableOpacity
+                <TouchableOpacity 
                   onPress={handleSubmit(onSubmit)}
                   activeOpacity={0.9}
-                  className="bg-primary h-14 rounded-lg items-center justify-center mt-6 shadow-md shadow-primary/20"
+                  style={{ backgroundColor: '#4F47E5', height: 56, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginTop: 24, shadowColor: '#4F47E5', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 }}
                 >
-                  <Text className="text-white font-sans-bold text-base">Log In</Text>
+                  <Text style={{ color: 'white', fontFamily: 'Figtree_700Bold', fontSize: 16 }}>Log In</Text>
                 </TouchableOpacity>
 
                 {/* Footer */}
-                <View className="flex-row justify-center items-center mt-6">
-                  <Text className="text-muted-foreground font-sans-medium text-sm">New here? </Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 24 }}>
+                  <Text style={{ color: '#64748b', fontFamily: 'Figtree_500Medium', fontSize: 14 }}>New here? </Text>
                   <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-                    <Text className="text-primary font-sans-bold text-sm">Create Account</Text>
+                    <Text style={{ color: '#4F47E5', fontFamily: 'Figtree_700Bold', fontSize: 14 }}>Create Account</Text>
                   </TouchableOpacity>
                 </View>
               </View>

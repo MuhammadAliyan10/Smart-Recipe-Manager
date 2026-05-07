@@ -1,5 +1,7 @@
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from src.core.database import engine, Base
 from src.domain import models  # Ensure models are imported for metadata
 from src.api.routes import router as extraction_router
@@ -16,6 +18,23 @@ app = FastAPI(
     title="Smart Recipe Manager - Extraction Engine",
     description="Headless data ingestion pipeline for food inventory systems.",
     version="1.1.0"
+)
+
+# Global exception handler for library-level ValueErrors (like bcrypt 72-char limit)
+@app.exception_handler(ValueError)
+async def value_error_exception_handler(request: Request, exc: ValueError):
+    return JSONResponse(
+        status_code=400,
+        content={"detail": str(exc)},
+    )
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Permits all origins for development
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Include API routes
