@@ -1,50 +1,112 @@
 // src/screens/PantryScreen.tsx
-import React from 'react';
-import { View, Text, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
-import { Refrigerator, Search, Filter, Plus } from 'lucide-react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+  View, 
+  Text, 
+  SafeAreaView, 
+  FlatList, 
+  RefreshControl,
+  StatusBar,
+  TouchableOpacity
+} from 'react-native';
+import { fetchPantryItems, IngredientItem } from '../api/pantry';
+import { Search, Filter, Plus } from 'lucide-react-native';
+
+// Components
+import ScreenHeader from '../components/ui/ScreenHeader';
+import PantryItemCard from '../components/pantry/PantryItemCard';
+import PantryEmptyState from '../components/pantry/PantryEmptyState';
+import Loader from '../components/ui/Loader';
 
 const PantryScreen = () => {
-  return (
-    <SafeAreaView className="flex-1 bg-background">
-      <View className="px-6 pt-10 pb-4 border-b border-border/50">
-        <View className="flex-row justify-between items-center">
-          <View>
-            <Text className="text-2xl font-sans-bold text-foreground">Your Pantry</Text>
-            <Text className="text-sm font-sans text-muted-foreground mt-1">Manage your active ingredients</Text>
-          </View>
-          <TouchableOpacity className="bg-primary/10 p-2.5 rounded-full">
-            <Plus size={20} color="#4F47E5" />
-          </TouchableOpacity>
-        </View>
+  const [items, setItems] = useState<IngredientItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const loadItems = useCallback(async (showLoader = false) => {
+    if (showLoader) setIsLoading(true);
+    try {
+      const data = await fetchPantryItems();
+      setItems(data);
+    } catch (error) {
+      console.error("[PANTRY] Load failed:", error);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadItems(true);
+  }, [loadItems]);
+
+  const onRefresh = () => {
+    setIsRefreshing(true);
+    loadItems();
+  };
+
+  const rightElement = (
+    <TouchableOpacity 
+      style={{ 
+        backgroundColor: 'rgba(79, 71, 229, 0.1)', 
+        padding: 10, 
+        borderRadius: 100 
+      }}
+    >
+      <Plus size={20} color="#4F47E5" />
+    </TouchableOpacity>
+  );
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <StatusBar barStyle="dark-content" />
+      <Loader visible={isLoading} message="Fetching pantry..." />
+
+      <ScreenHeader 
+        title="Your Pantry"
+        subtitle={`${items.length} ingredients in stock`}
+        rightElement={rightElement}
+      />
+
+      <View style={{ paddingHorizontal: 24, paddingBottom: 16 }}>
         {/* Search & Filter Placeholders */}
-        <View className="flex-row mt-6 gap-x-3">
-          <View className="flex-1 bg-muted/50 rounded-xl px-4 py-3 flex-row items-center">
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <View style={{ flex: 1, backgroundColor: '#f1f5f9', borderRadius: 12, px: 16, padding: 12, flexDirection: 'row', alignItems: 'center' }}>
             <Search size={16} color="#94a3b8" />
-            <Text className="ml-3 text-muted-foreground font-sans text-sm">Search ingredients...</Text>
+            <Text style={{ marginLeft: 12, color: '#94a3b8', fontSize: 14, fontFamily: 'Figtree_400Regular' }}>Search ingredients...</Text>
           </View>
-          <View className="bg-muted/50 rounded-xl px-4 py-3 items-center justify-center">
+          <View style={{ backgroundColor: '#f1f5f9', borderRadius: 12, padding: 12, alignItems: 'center', justifyContent: 'center' }}>
             <Filter size={16} color="#94a3b8" />
           </View>
         </View>
       </View>
 
-      <ScrollView 
-        className="flex-1" 
-        contentContainerStyle={{ flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 }}
-      >
-        <View className="bg-primary/5 p-8 rounded-full mb-6">
-          <Refrigerator size={64} color="#4F47E5" opacity={0.5} />
-        </View>
-        <Text className="text-lg font-sans-bold text-foreground text-center">Your Pantry is Empty</Text>
-        <Text className="text-sm font-sans text-muted-foreground text-center mt-2 leading-5">
-          Scan a grocery receipt or add items manually to start tracking your inventory health.
-        </Text>
-        
-        <TouchableOpacity className="bg-primary px-8 py-4 rounded-xl mt-8 shadow-lg shadow-primary/20">
-          <Text className="text-white font-sans-bold">Add First Item</Text>
-        </TouchableOpacity>
-      </ScrollView>
+      <FlatList
+        data={items}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <PantryItemCard 
+            name={item.name}
+            quantity={item.quantity}
+            category={item.category}
+          />
+        )}
+        style={{ flex: 1, paddingHorizontal: 24 }}
+        contentContainerStyle={{ 
+          paddingBottom: 120,
+          paddingTop: 10 
+        }}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={!isLoading ? PantryEmptyState : null}
+        refreshControl={
+          <RefreshControl 
+            refreshing={isRefreshing} 
+            onRefresh={onRefresh}
+            tintColor="#4F47E5"
+            colors={["#4F47E5"]}
+          />
+        }
+      />
     </SafeAreaView>
   );
 };

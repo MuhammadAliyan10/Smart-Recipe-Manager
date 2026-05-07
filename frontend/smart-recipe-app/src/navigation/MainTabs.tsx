@@ -6,7 +6,7 @@ import CustomTabBar from '../components/navigation/CustomTabBar';
 // Screens
 import DashboardScreen from '../screens/DashboardScreen';
 import PantryScreen from '../screens/PantryScreen';
-import RecipeScreen from '../screens/RecipeScreen'; 
+import ScanScreen from '../screens/ScanScreen'; 
 import RecipesScreen from '../screens/RecipesScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 
@@ -23,7 +23,7 @@ const MainTabs = () => {
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="Pantry" component={PantryScreen} />
-      <Tab.Screen name="Scan" component={RecipeScreen} />
+      <Tab.Screen name="Scan" component={ScanScreen} />
       <Tab.Screen name="Recipes" component={RecipesScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>

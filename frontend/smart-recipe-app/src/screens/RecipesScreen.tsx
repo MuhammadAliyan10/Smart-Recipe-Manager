@@ -1,57 +1,108 @@
 // src/screens/RecipesScreen.tsx
-import React from 'react';
-import { View, Text, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
-import { ChefHat, Sparkles, Flame, Clock } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { 
+  View, 
+  Text, 
+  SafeAreaView, 
+  FlatList, 
+  StatusBar, 
+  Dimensions,
+  Platform
+} from 'react-native';
+import { ChefHat } from 'lucide-react-native';
+
+// Components
+import ScreenHeader from '../components/ui/ScreenHeader';
+import RecipeCard, { Recipe } from '../components/recipes/RecipeCard';
+import GenerateRecipeCTA from '../components/recipes/GenerateRecipeCTA';
+import Loader from '../components/ui/Loader';
+
+const { height } = Dimensions.get('window');
 
 const RecipesScreen = () => {
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleGenerate = () => {
+    setIsGenerating(true);
+    setTimeout(() => {
+      const mockRecipes: Recipe[] = [
+        {
+          id: '1',
+          title: 'Mediterranean Quinoa Salad',
+          matchPercentage: 98,
+          time: '15 min',
+          calories: '340 kcal',
+          ingredients: ['Quinoa', 'Cucumber', 'Feta', 'Olives', 'Lemon']
+        },
+        {
+          id: '2',
+          title: 'Lemon Garlic Roasted Chicken',
+          matchPercentage: 85,
+          time: '45 min',
+          calories: '520 kcal',
+          ingredients: ['Chicken Breast', 'Lemon', 'Garlic', 'Rosemary']
+        },
+        {
+          id: '3',
+          title: 'Creamy Mushroom Pasta',
+          matchPercentage: 92,
+          time: '20 min',
+          calories: '610 kcal',
+          ingredients: ['Penne', 'Mushrooms', 'Cream', 'Parmesan', 'Parsley']
+        }
+      ];
+      setRecipes(mockRecipes);
+      setIsGenerating(false);
+    }, 3000);
+  };
+
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <View className="px-6 pt-10 pb-4 border-b border-border/50">
-        <Text className="text-2xl font-sans-bold text-foreground">AI Recipes</Text>
-        <Text className="text-sm font-sans text-muted-foreground mt-1">Culinary magic based on your pantry</Text>
-      </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <StatusBar barStyle="dark-content" />
+      <Loader visible={isGenerating} message="AI Chef is thinking..." />
 
-      <ScrollView className="flex-1 px-6 pt-6">
-        {/* Featured Card Placeholder */}
-        <View className="bg-primary/5 border border-primary/20 rounded-2xl p-6 mb-8 overflow-hidden">
-          <View className="absolute -top-4 -right-4 bg-primary/10 w-24 h-24 rounded-full" />
-          <View className="flex-row items-center mb-4">
-            <Sparkles size={20} color="#4F47E5" />
-            <Text className="ml-2 text-primary font-sans-bold text-xs uppercase tracking-widest">AI Suggestion</Text>
+      <ScreenHeader 
+        title="AI Chef"
+        subtitle="Smart recipes based on your pantry"
+      />
+
+      {recipes.length === 0 ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40, marginTop: -60 }}>
+          <View style={{ backgroundColor: 'rgba(79, 71, 229, 0.05)', padding: 40, borderRadius: 100, marginBottom: 32 }}>
+            <ChefHat size={80} color="#4F47E5" opacity={0.3} />
           </View>
-          <Text className="text-xl font-sans-bold text-foreground mb-2">Generate Your First Recipe</Text>
-          <Text className="text-sm font-sans text-muted-foreground mb-6 leading-5">
-            Our AI will analyze your 12 pantry items to suggest a healthy, delicious meal you can cook right now.
+          <Text style={{ fontSize: 20, fontWeight: '700', color: '#0f172a', textAlign: 'center', fontFamily: 'Figtree_700Bold' }}>
+            Ready to cook something?
           </Text>
-          
-          <TouchableOpacity className="bg-primary py-4 rounded-xl items-center shadow-lg shadow-primary/20">
-            <Text className="text-white font-sans-bold">Generate with AI</Text>
-          </TouchableOpacity>
+          <Text style={{ fontSize: 14, color: '#64748b', textAlign: 'center', marginTop: 12, marginBottom: 40, lineHeight: 22, fontFamily: 'Figtree_400Regular' }}>
+            Tap the button below to analyze your current pantry and generate personalized meal suggestions.
+          </Text>
+          <View style={{ width: '100%' }}>
+            <GenerateRecipeCTA onPress={handleGenerate} />
+          </View>
         </View>
-
-        {/* Categories Placeholder */}
-        <Text className="text-sm font-sans-bold text-foreground uppercase tracking-widest mb-4">Categories</Text>
-        <View className="flex-row gap-x-4 mb-8">
-          <CategoryItem icon={Flame} label="Quick" />
-          <CategoryItem icon={Clock} label="Under 30m" />
-          <CategoryItem icon={ChefHat} label="Expert" />
-        </View>
-
-        {/* Empty State Help */}
-        <View className="items-center py-10">
-          <ChefHat size={48} color="#94a3b8" opacity={0.3} />
-          <Text className="text-muted-foreground font-sans text-center mt-4">No saved recipes yet.</Text>
-        </View>
-      </ScrollView>
+      ) : (
+        <FlatList
+          data={recipes}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <RecipeCard recipe={item} />}
+          style={{ flex: 1, paddingHorizontal: 24 }}
+          contentContainerStyle={{ paddingBottom: 120, paddingTop: 10 }}
+          showsVerticalScrollIndicator={false}
+          ListFooterComponent={() => (
+            <View style={{ marginTop: 16, marginBottom: 40 }}>
+              <GenerateRecipeCTA 
+                onPress={handleGenerate} 
+                label="Regenerate Suggestions" 
+                isSecondary 
+              />
+            </View>
+          )}
+        />
+      )}
     </SafeAreaView>
   );
 };
-
-const CategoryItem = ({ icon: Icon, label }: any) => (
-  <View className="flex-1 bg-card border border-border rounded-xl p-4 items-center justify-center">
-    <Icon size={20} color="#64748b" />
-    <Text className="mt-2 text-[10px] font-sans-bold text-muted-foreground text-center">{label}</Text>
-  </View>
-);
 
 export default RecipesScreen;
