@@ -3,7 +3,6 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { ShoppingBag } from 'lucide-react-native';
-import ScreenHeader from '../ui/ScreenHeader';
 
 interface DashboardHeaderProps {
   totalItems: number;
@@ -19,40 +18,22 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ totalItems }) => {
     return "Good Evening";
   };
 
-  const rightElement = (
-    <View 
-      style={{ 
-        backgroundColor: 'rgba(79, 71, 229, 0.1)', 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        paddingHorizontal: 12, 
-        paddingVertical: 8, 
-        borderRadius: 100,
-        borderWidth: 1,
-        borderColor: 'rgba(79, 71, 229, 0.2)'
-      }}
-    >
-      <ShoppingBag size={14} color="#4F47E5" />
-      <Text 
-        style={{ 
-          color: '#4F47E5', 
-          fontWeight: '700', 
-          fontSize: 12, 
-          marginLeft: 6,
-          fontFamily: 'Figtree_700Bold'
-        }}
-      >
-        {totalItems} {totalItems === 1 ? 'Item' : 'Items'}
-      </Text>
-    </View>
-  );
+  const firstName = user?.full_name?.split(' ')[0] || 'Guest';
 
   return (
-    <ScreenHeader 
-      title={user?.full_name?.split(' ')[0] || 'Guest'}
-      subtitle={`${getGreeting()}, welcome back!`}
-      rightElement={rightElement}
-    />
+    <View className="px-6 py-6 flex-row items-center justify-between">
+      <View>
+        <Text className="text-slate-400 font-sans-bold text-[10px] uppercase tracking-widest mb-1">{getGreeting()}</Text>
+        <Text className="text-slate-900 font-sans-bold text-2xl">ChefSync, {firstName}</Text>
+      </View>
+
+      <View className="bg-primary/10 flex-row items-center px-4 py-2 rounded-full border border-primary/20 shadow-sm">
+        <ShoppingBag size={14} color="#4F47E5" />
+        <Text className="text-primary font-sans-bold text-xs ml-2">
+          {totalItems} {totalItems === 1 ? 'Item' : 'Items'}
+        </Text>
+      </View>
+    </View>
   );
 };
 

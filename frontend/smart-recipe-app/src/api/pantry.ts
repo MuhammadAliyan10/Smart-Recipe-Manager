@@ -13,10 +13,10 @@ export interface IngredientItem {
 /**
  * Fetches the user's ingredient history from the backend.
  */
-export const fetchPantryItems = async (): Promise<IngredientItem[]> => {
+export const fetchPantryItems = async (skip: number = 0, limit: number = 20): Promise<IngredientItem[]> => {
   try {
     const response = await client.get('/v1/ingredients/history', {
-      params: { limit: 50, offset: 0 }
+      params: { limit, offset: skip }
     });
     return response.data;
   } catch (error) {

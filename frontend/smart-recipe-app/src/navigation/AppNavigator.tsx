@@ -17,6 +17,7 @@ import MainTabs from './MainTabs';
 import RecipeDetailScreen from '../screens/RecipeDetailScreen';
 import ShoppingListScreen from '../screens/ShoppingListScreen';
 import CookingModeScreen from '../screens/CookingModeScreen';
+import RecipeFormScreen from '../screens/RecipeFormScreen';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -41,10 +42,8 @@ const AppNavigator = () => {
   });
 
   const onLayoutRootView = useCallback(async () => {
-    console.log("[NAV] Layout Triggered", { fontsLoaded, fontError: !!fontError, isLoading });
     if (fontsLoaded || fontError) {
       if (!isLoading) {
-        console.log("[NAV] Hiding Splash Screen");
         await SplashScreen.hideAsync();
       }
     }
@@ -54,11 +53,6 @@ const AppNavigator = () => {
     onLayoutRootView();
   }, [onLayoutRootView]);
 
-  if (fontError) {
-    console.error("[NAV] Font Loading Error:", fontError);
-  }
-
-  // Fallback to avoid black screen if fonts take too long
   if (!fontsLoaded && !fontError) {
     return (
       <View style={{ flex: 1, backgroundColor: 'white', justifyContent: 'center', alignItems: 'center' }}>
@@ -86,25 +80,21 @@ const AppNavigator = () => {
             <RootStack.Screen 
               name="RecipeDetail" 
               component={RecipeDetailScreen} 
-              options={{ 
-                presentation: 'modal',
-                animation: 'slide_from_bottom'
-              }} 
+              options={{ presentation: 'modal' }} 
             />
             <RootStack.Screen 
               name="ShoppingList" 
               component={ShoppingListScreen} 
-              options={{ 
-                animation: 'slide_from_right'
-              }} 
             />
             <RootStack.Screen 
               name="CookingMode" 
               component={CookingModeScreen} 
-              options={{ 
-                presentation: 'fullScreenModal',
-                animation: 'fade_from_bottom'
-              }} 
+              options={{ presentation: 'fullScreenModal' }} 
+            />
+            <RootStack.Screen 
+              name="RecipeForm" 
+              component={RecipeFormScreen} 
+              options={{ presentation: 'modal' }} 
             />
           </>
         )}

@@ -7,7 +7,8 @@ import {
   TouchableOpacity, 
   StatusBar, 
   ActivityIndicator,
-  RefreshControl
+  RefreshControl,
+  TextInput
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,6 +25,7 @@ import {
   fetchShoppingList, 
   toggleShoppingItem, 
   deleteShoppingItem, 
+  addToShoppingList,
   ShoppingItem 
 } from '../api/shoppingList';
 
@@ -32,6 +34,8 @@ const ShoppingListScreen = () => {
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [newItemName, setNewItemName] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
 
   const loadItems = async (showLoading = true) => {
     if (showLoading) setIsLoading(true);
@@ -56,8 +60,33 @@ const ShoppingListScreen = () => {
     }, [])
   );
 
+  const handleAddItem = async () => {
+    if (!newItemName.trim() || isAdding) return;
+    
+    setIsAdding(true);
+    const itemToAdd = newItemName.trim();
+    
+    try {
+      const newItems = await addToShoppingList([itemToAdd]);
+      setItems(prev => [...newItems, ...prev]);
+      setNewItemName('');
+      Toast.show({
+        type: 'success',
+        text1: 'Item Added',
+        text2: `"${itemToAdd}" was added to your list.`,
+      });
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Add Failed',
+        text2: 'Could not add item to list.',
+      });
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
   const handleToggle = async (id: number, currentStatus: boolean) => {
-    // Optimistic Update
     setItems(prev => prev.map(item => 
       item.id === id ? { ...item, is_purchased: !currentStatus } : item
     ));
@@ -65,7 +94,6 @@ const ShoppingListScreen = () => {
     try {
       await toggleShoppingItem(id, !currentStatus);
     } catch (error) {
-      // Revert on error
       setItems(prev => prev.map(item => 
         item.id === id ? { ...item, is_purchased: currentStatus } : item
       ));
@@ -98,13 +126,12 @@ const ShoppingListScreen = () => {
       <StatusBar barStyle="dark-content" />
       <SafeAreaView className="flex-1" edges={['top']}>
         
-        {/* Header */}
         <View className="flex-row items-center justify-between px-6 py-4 border-b border-border/50 bg-white">
           <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 -ml-2">
             <ArrowLeft size={24} color="#0f172a" />
           </TouchableOpacity>
           <Text className="text-foreground font-sans-bold text-lg">Shopping List</Text>
-          <View className="w-10" /> {/* Spacer */}
+          <View className="w-10" />
         </View>
 
         <FlatList
@@ -117,15 +144,42 @@ const ShoppingListScreen = () => {
             }} tintColor="#4F47E5" />
           }
           ListHeaderComponent={
-            <View className="px-6 pt-6 pb-2">
-              <Text className="text-muted-foreground font-sans-medium text-xs uppercase tracking-widest mb-4">
-                {items.filter(i => !i.is_purchased).length} Items Remaining
-              </Text>
+            <View className="px-6 pt-6 pb-4">
+              {/* Manual Add Input */}
+              <View className="flex-row items-center gap-x-3 mb-6">
+                <View className="flex-1 bg-card border border-border rounded-xl px-4 h-14 flex-row items-center">
+                  <TextInput
+                    value={newItemName}
+                    onChangeText={setNewItemName}
+                    placeholder="Add manual item..."
+                    placeholderTextColor="#94a3b8"
+                    className="flex-1 font-sans-medium text-foreground h-full"
+                    onSubmitEditing={handleAddItem}
+                  />
+                </View>
+                <TouchableOpacity 
+                  onPress={handleAddItem}
+                  disabled={!newItemName.trim() || isAdding}
+                  className={`w-14 h-14 rounded-xl items-center justify-center ${newItemName.trim() ? 'bg-primary' : 'bg-slate-200'}`}
+                >
+                  {isAdding ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <Plus size={24} color="white" />
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              {items.length > 0 && (
+                <Text className="text-muted-foreground font-sans-bold text-[10px] uppercase tracking-widest mb-4">
+                  {items.filter(i => !i.is_purchased).length} Items Remaining
+                </Text>
+              )}
             </View>
           }
           renderItem={({ item }) => (
             <View className="px-6 mb-3">
-              <View className={`flex-row items-center bg-card border border-border p-4 rounded-2xl ${item.is_purchased ? 'opacity-50' : 'shadow-sm'}`}>
+              <View className={`flex-row items-center bg-card border border-border p-4 rounded-2xl ${item.is_purchased ? 'opacity-50' : 'shadow-sm shadow-slate-200'}`}>
                 <TouchableOpacity 
                   onPress={() => handleToggle(item.id, item.is_purchased)}
                   className="mr-4"
@@ -169,7 +223,7 @@ const ShoppingListScreen = () => {
               </View>
             )
           }
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: 140 }}
           showsVerticalScrollIndicator={false}
         />
       </SafeAreaView>

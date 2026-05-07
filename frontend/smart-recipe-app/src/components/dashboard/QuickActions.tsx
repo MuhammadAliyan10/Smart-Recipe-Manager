@@ -21,13 +21,7 @@ const QuickActions = () => {
 
       {/* Manual Add */}
       <Pressable 
-        onPress={() => {
-          Toast.show({
-            type: 'info',
-            text1: 'Coming Soon',
-            text2: 'Manual entry is currently being polished.',
-          });
-        }}
+        onPress={() => navigation.navigate('Pantry', { action: 'openManualAdd' })}
         className="flex-1 bg-card border border-border rounded-2xl p-4 items-center justify-center aspect-square"
       >
         <Plus size={24} color="#64748b" />

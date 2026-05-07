@@ -1,5 +1,5 @@
 // src/screens/RecipesScreen.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { 
   View, 
   FlatList, 
@@ -7,142 +7,168 @@ import {
   Text, 
   TextInput, 
   TouchableOpacity, 
-  KeyboardAvoidingView, 
-  Platform 
+  ActivityIndicator,
+  RefreshControl
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { ChefHat, Sparkles, Plus, Search } from 'lucide-react-native';
 import { generateRecipes, getRecipeHistory, Recipe } from '../api/recipes';
-import { ChefHat, Info } from 'lucide-react-native';
 
 // Components
 import ScreenHeader from '../components/ui/ScreenHeader';
 import RecipeCard from '../components/recipes/RecipeCard';
-import GenerateRecipeCTA from '../components/recipes/GenerateRecipeCTA';
 import Loader from '../components/ui/Loader';
 
+const PAGE_SIZE = 10;
+
 const RecipesScreen = () => {
+  const navigation = useNavigation<any>();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [preferences, setPreferences] = useState('');
 
-  const fetchHistory = async () => {
-    try {
-      const data = await getRecipeHistory();
-      setRecipes(data);
-    } catch (error) {
-      console.error("[RECIPES] History fetch failed:", error);
-    } finally {
-      setIsLoadingHistory(false);
-    }
-  };
+  // Pagination State
+  const [page, setPage] = useState(0);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
 
-  useEffect(() => {
-    fetchHistory();
-  }, []);
+  const loadRecipes = useCallback(async (reset = false) => {
+    if (reset) {
+      setIsRefreshing(true);
+      setPage(0);
+      setHasMore(true);
+    } else if (page === 0) {
+      setIsLoading(true);
+    }
+
+    try {
+      const skip = reset ? 0 : page * PAGE_SIZE;
+      const data = await getRecipeHistory(skip, PAGE_SIZE);
+      
+      if (reset) {
+        setRecipes(data);
+      } else {
+        setRecipes(prev => [...prev, ...data]);
+      }
+
+      if (data.length < PAGE_SIZE) {
+        setHasMore(false);
+      }
+      
+      if (!reset) setPage(prev => prev + 1);
+    } catch (error) {
+      console.error("[RECIPES] Fetch failed:", error);
+      Toast.show({ type: 'error', text1: 'Sync Failed', text2: 'Could not load your recipes.' });
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+      setIsFetchingMore(false);
+    }
+  }, [page]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (recipes.length === 0) {
+        loadRecipes(true);
+      }
+    }, [])
+  );
+
+  const loadMore = () => {
+    if (isFetchingMore || !hasMore || isLoading) return;
+    setIsFetchingMore(true);
+    loadRecipes(false);
+  };
 
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
       const data = await generateRecipes(preferences);
-      
-      // Update local state with new recipes at the top
       setRecipes(prev => [...data, ...prev]);
-      
       Toast.show({
         type: 'success',
         text1: 'Recipes Ready!',
         text2: `AI found ${data.length} delicious meals for you.`,
       });
-      
-      // Clear preferences after generation
       setPreferences('');
-      
     } catch (error: any) {
-      console.error("[RECIPES] Generation error:", error);
       const errorMessage = error.response?.data?.detail || "Could not generate recipes.";
-      Toast.show({
-        type: 'error',
-        text1: 'Generation Failed',
-        text2: errorMessage,
-      });
+      Toast.show({ type: 'error', text1: 'Generation Failed', text2: errorMessage });
     } finally {
       setIsGenerating(false);
     }
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+    <View className="flex-1 bg-background">
       <StatusBar barStyle="dark-content" />
       <Loader visible={isGenerating} message="AI is crafting your menu..." />
       
-      <SafeAreaView style={{ flex: 1 }}>
+      <SafeAreaView className="flex-1" edges={['top']}>
         <ScreenHeader 
           title="AI Chef" 
           subtitle="Smart recipes based on your pantry" 
+          rightElement={
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('RecipeForm')}
+              className="bg-secondary/80 p-3 rounded-2xl border border-border/50"
+            >
+              <Plus size={20} color="#4F47E5" />
+            </TouchableOpacity>
+          }
         />
 
         <FlatList
           data={recipes}
           keyExtractor={(item, index) => `${item.id || index}-${index}`}
           renderItem={({ item }) => <RecipeCard recipe={item} />}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
           ListHeaderComponent={
-            <View className="mb-6">
-              {/* Preference Input Card */}
-              <View className="bg-secondary/30 p-5 rounded-3xl mb-6 border border-border/50">
-                <View className="flex-row items-center mb-3">
-                  <ChefHat size={18} color="#4F47E5" />
-                  <Text className="text-foreground font-sans-bold ml-2 text-base">What are you craving?</Text>
+            <View className="px-6 mb-6">
+              <View className="bg-card border border-border rounded-3xl p-5 shadow-sm">
+                <View className="flex-row items-center mb-4">
+                  <Search size={18} color="#64748b" />
+                  <Text className="text-foreground font-sans-bold ml-2 text-sm">Add Preferences</Text>
                 </View>
-                
                 <TextInput
-                  placeholder="e.g. Italian, Healthy, Quick snacks, Spicy..."
+                  placeholder="e.g. Italian, Healthy, Spicy..."
                   value={preferences}
                   onChangeText={setPreferences}
-                  className="bg-white px-4 py-4 rounded-2xl border border-border font-sans-medium text-sm mb-4 text-foreground"
+                  className="bg-background border border-border px-4 py-4 rounded-2xl font-sans-medium text-sm text-foreground"
                   placeholderTextColor="#94a3b8"
                 />
-
-                <GenerateRecipeCTA 
-                  onPress={handleGenerate} 
-                  isGenerating={isGenerating} 
-                  label={preferences ? "Generate Custom Recipes" : "Generate AI Recipes"}
-                />
-
-                <View className="flex-row items-center mt-4 px-1">
-                  <Info size={12} color="#64748b" />
-                  <Text className="text-[10px] text-muted-foreground font-sans-medium ml-1.5">
-                    AI will prioritize your pantry and these preferences.
-                  </Text>
-                </View>
               </View>
-
-              <View className="flex-row justify-between items-center px-1 mb-2">
-                <Text className="text-foreground font-sans-bold text-lg">Your Menu</Text>
-                {recipes.length > 0 && (
-                  <Text className="text-muted-foreground font-sans-medium text-xs">{recipes.length} Saved</Text>
-                )}
-              </View>
+              <Text className="text-foreground font-sans-bold text-lg mt-8 mb-2">Your Saved Recipes</Text>
             </View>
           }
-          ListEmptyComponent={
-            !isGenerating && !isLoadingHistory ? (
-              <View style={{ padding: 40, alignItems: 'center' }}>
-                <Text style={{ color: '#94a3b8', fontFamily: 'Figtree_500Medium', textAlign: 'center' }}>
-                  Your menu is empty. Tell the AI what you want and tap generate!
-                </Text>
+          ListFooterComponent={
+            isFetchingMore ? (
+              <View className="py-6 items-center">
+                <ActivityIndicator size="small" color="#4F47E5" />
               </View>
             ) : null
           }
-          contentContainerStyle={{ 
-            paddingHorizontal: 24, 
-            paddingTop: 12, 
-            paddingBottom: 40 
-            
-          }}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={() => loadRecipes(true)} tintColor="#4F47E5" />
+          }
+          contentContainerStyle={{ paddingBottom: 120 }}
           showsVerticalScrollIndicator={false}
         />
+
+        {/* Premium FAB */}
+        <TouchableOpacity 
+          onPress={handleGenerate}
+          activeOpacity={0.9}
+          className="absolute bottom-8 self-center bg-primary rounded-full px-8 py-5 flex-row items-center justify-center shadow-2xl shadow-primary/40"
+        >
+          <Sparkles size={20} color="white" />
+          <Text className="text-white font-sans-bold ml-3 text-base">Generate AI Recipes</Text>
+        </TouchableOpacity>
       </SafeAreaView>
     </View>
   );

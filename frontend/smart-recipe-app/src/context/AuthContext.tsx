@@ -35,10 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(response.data);
       return response.data;
     } catch (error: any) {
-      console.error("[AUTH] Profile fetch failed:", error.message);
-      // We do NOT call logout() here. 
-      // The Axios interceptor in client.ts handles 401 (expiry) by clearing AsyncStorage.
-      // For 500 or network errors, we want to keep the token and retry later.
+      console.error("[AUTH] ChefSync profile fetch failed:", error.message);
       throw error;
     }
   };
@@ -100,7 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUserToken(access_token);
       await fetchUserProfile(access_token);
       
-      console.log("[AUTH] Login successful. Session persisted.");
+      console.log("[AUTH] ChefSync login successful. Session persisted.");
     } catch (error: any) {
       const detail = error.response?.data?.detail;
       const message = typeof detail === 'string' ? detail : 'Invalid email or password.';

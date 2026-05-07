@@ -1,7 +1,8 @@
 // src/components/dashboard/RecentScans.tsx
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { Package, ChevronRight } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
 import { IngredientItem } from '../../api/pantry';
 
 interface RecentScansProps {
@@ -9,6 +10,8 @@ interface RecentScansProps {
 }
 
 const RecentScans: React.FC<RecentScansProps> = ({ items }) => {
+  const navigation = useNavigation<any>();
+
   return (
     <View className="px-6 mb-10">
       <View className="flex-row justify-between items-end mb-4">
@@ -16,7 +19,9 @@ const RecentScans: React.FC<RecentScansProps> = ({ items }) => {
           <Text className="text-foreground font-sans-bold text-lg">Recent Items</Text>
           <Text className="text-muted-foreground font-sans text-xs">Recently added to your inventory</Text>
         </View>
-        <Text className="text-primary font-sans-bold text-xs">View History</Text>
+        <Pressable onPress={() => navigation.navigate('Pantry')}>
+          <Text className="text-primary font-sans-bold text-xs">View History</Text>
+        </Pressable>
       </View>
 
       <View className="bg-card border border-border rounded-2xl overflow-hidden">

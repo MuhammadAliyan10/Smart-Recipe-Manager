@@ -1,5 +1,5 @@
 // src/screens/PantryScreen.tsx
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { 
   View, 
   FlatList, 
@@ -7,13 +7,13 @@ import {
   Text, 
   TouchableOpacity, 
   StatusBar,
-  TextInput 
+  TextInput,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useRoute, useNavigation } from '@react-navigation/native';
 import { RefreshCcw, ShoppingCart, Plus, Search, X } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
-import { useNavigation } from '@react-navigation/native';
 import { 
   fetchPantryItems, 
   deletePantryItem, 
@@ -29,12 +29,20 @@ import PantryEmptyState from '../components/pantry/PantryEmptyState';
 import PantryItemFormModal from '../components/pantry/PantryItemFormModal';
 import Loader from '../components/ui/Loader';
 
+const PAGE_SIZE = 20;
+
 const PantryScreen = () => {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const [items, setItems] = useState<IngredientItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Pagination State
+  const [page, setPage] = useState(0);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
 
   // Search State
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,38 +52,69 @@ const PantryScreen = () => {
   const [selectedItem, setSelectedItem] = useState<IngredientItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Optimized Search Filtering
-  const filteredItems = useMemo(() => {
-    if (!searchQuery.trim()) return items;
-    const query = searchQuery.toLowerCase();
-    return items.filter(item => 
-      item.name.toLowerCase().includes(query) || 
-      item.category.toLowerCase().includes(query)
-    );
-  }, [items, searchQuery]);
+  // Deep Link Handling
+  useEffect(() => {
+    if (route.params?.action === 'openManualAdd') {
+      setSelectedItem(null);
+      setIsModalVisible(true);
+      navigation.setParams({ action: undefined });
+    }
+  }, [route.params?.action]);
 
-  const loadPantry = useCallback(async (showRefreshing = false) => {
-    if (showRefreshing) setIsRefreshing(true);
-    else if (items.length === 0) setIsLoading(true);
+  const loadPantry = useCallback(async (reset = false) => {
+    if (reset) {
+      setIsRefreshing(true);
+      setPage(0);
+      setHasMore(true);
+    } else if (page === 0) {
+      setIsLoading(true);
+    }
     
     setError(null);
     try {
-      const data = await fetchPantryItems();
-      setItems(data);
+      const skip = reset ? 0 : page * PAGE_SIZE;
+      const data = await fetchPantryItems(skip, PAGE_SIZE);
+      
+      if (reset) {
+        setItems(data);
+      } else {
+        setItems(prev => [...prev, ...data]);
+      }
+
+      if (data.length < PAGE_SIZE) {
+        setHasMore(false);
+      }
+      
+      if (!reset) setPage(prev => prev + 1);
+
     } catch (err: any) {
       setError("Failed to synchronize pantry.");
       console.error("[PANTRY] Load error:", err);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
+      setIsFetchingMore(false);
     }
-  }, [items.length]);
+  }, [page]);
 
   useFocusEffect(
     useCallback(() => {
-      loadPantry();
-    }, [loadPantry])
+      // Re-fetch only if items are empty to avoid resetting scroll position on tab switch
+      if (items.length === 0) {
+        loadPantry(true);
+      }
+    }, [])
   );
+
+  const loadMore = () => {
+    if (isFetchingMore || !hasMore || isLoading) return;
+    setIsFetchingMore(true);
+    loadPantry(false);
+  };
+
+  const handleRefresh = () => {
+    loadPantry(true);
+  };
 
   const handleDelete = async (id: number | string) => {
     const previousItems = [...items];
@@ -117,7 +156,7 @@ const PantryScreen = () => {
         });
       }
       setIsModalVisible(false);
-      loadPantry();
+      loadPantry(true); // Reset to show the new item at the top
     } catch (error) {
       Toast.show({
         type: 'error',
@@ -139,6 +178,15 @@ const PantryScreen = () => {
     setIsModalVisible(true);
   };
 
+  const filteredItems = useMemo(() => {
+    if (!searchQuery.trim()) return items;
+    const query = searchQuery.toLowerCase();
+    return items.filter(item => 
+      item.name.toLowerCase().includes(query) || 
+      item.category.toLowerCase().includes(query)
+    );
+  }, [items, searchQuery]);
+
   if (error && items.length === 0) {
     return (
       <SafeAreaView className="flex-1 bg-background items-center justify-center px-10">
@@ -146,13 +194,7 @@ const PantryScreen = () => {
           <RefreshCcw size={40} color="#ef4444" />
         </View>
         <Text className="text-xl font-sans-bold text-foreground text-center">Sync Failed</Text>
-        <Text className="text-sm font-sans text-muted-foreground text-center mt-3 mb-10 leading-5">
-          We couldn't connect to your pantry. Check your connection and try again.
-        </Text>
-        <TouchableOpacity 
-          onPress={() => loadPantry()}
-          className="bg-primary px-10 py-4 rounded-xl"
-        >
+        <TouchableOpacity onPress={() => loadPantry(true)} className="bg-primary px-10 py-4 rounded-xl mt-6">
           <Text className="text-white font-sans-bold">Retry Sync</Text>
         </TouchableOpacity>
       </SafeAreaView>
@@ -178,7 +220,6 @@ const PantryScreen = () => {
           }
         />
 
-        {/* Search Bar */}
         <View className="px-6 mb-4">
           <View className="flex-row items-center bg-card border border-border rounded-2xl px-4 py-3 shadow-sm">
             <Search size={20} color="#64748b" />
@@ -189,17 +230,12 @@ const PantryScreen = () => {
               placeholderTextColor="#94a3b8"
               className="flex-1 ml-3 font-sans-medium text-foreground"
             />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <X size={18} color="#94a3b8" />
-              </TouchableOpacity>
-            )}
           </View>
         </View>
 
         <FlatList
           data={filteredItems}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item, index) => `${item.id}-${index}`}
           renderItem={({ item }) => (
             <PantryItemCard 
               id={item.id}
@@ -210,33 +246,30 @@ const PantryScreen = () => {
               onEdit={() => openEditModal(item)}
             />
           )}
-          contentContainerStyle={{ 
-            paddingHorizontal: 24, 
-            paddingTop: 4, 
-            paddingBottom: 140 
-          }}
+          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 140 }}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={!isLoading ? <PantryEmptyState /> : null}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            isFetchingMore ? (
+              <View className="py-6 items-center">
+                <ActivityIndicator size="small" color="#4F47E5" />
+              </View>
+            ) : null
+          }
           refreshControl={
-            <RefreshControl 
-              refreshing={isRefreshing} 
-              onRefresh={() => loadPantry(true)} 
-              tintColor="#4F47E5"
-              colors={["#4F47E5"]}
-            />
+            <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#4F47E5" />
           }
         />
 
-        {/* Floating Action Button */}
         <TouchableOpacity 
           onPress={openAddModal}
           className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-xl shadow-primary/40 elevation-5"
-          activeOpacity={0.8}
         >
           <Plus size={32} color="white" />
         </TouchableOpacity>
 
-        {/* Entry Modal */}
         <PantryItemFormModal 
           visible={isModalVisible}
           onClose={() => setIsModalVisible(false)}

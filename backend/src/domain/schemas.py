@@ -73,7 +73,7 @@ class Recipe(BaseModel):
     calories: str = Field(..., description="Estimated calories per serving")
     ingredients: List[str] = Field(..., description="List of key ingredient names used")
     instructions: List[str] = Field(..., description="Step-by-step cooking instructions")
-    missing_ingredients: List[str] = Field(default_factory=list, description="Ingredients the user is missing or has insufficient quantity of")
+    missing_ingredients: Optional[List[str]] = Field(default_factory=list, description="Ingredients the user is missing or has insufficient quantity of")
     substitutes: List[RecipeSubstitute] = Field(default_factory=list, description="Suggested ingredient substitutes")
     created_at: Optional[datetime] = None
     

@@ -6,9 +6,9 @@ import {
   ScrollView, 
   TouchableOpacity, 
   SafeAreaView, 
-  StatusBar,
-  ActivityIndicator,
-  Alert
+  StatusBar, 
+  ActivityIndicator, 
+  Alert 
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { 
@@ -16,14 +16,14 @@ import {
   Clock, 
   Flame, 
   Sparkles, 
-  Utensils, 
   RotateCcw, 
-  CheckCircle2,
-  ShoppingCart,
-  Check,
-  Trash2,
-  ChefHat,
-  AlertCircle
+  CheckCircle2, 
+  ShoppingCart, 
+  Check, 
+  Trash2, 
+  ChefHat, 
+  AlertCircle, 
+  Pencil 
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { Recipe, deleteRecipe } from '../api/recipes';
@@ -33,273 +33,189 @@ const RecipeDetailScreen = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { recipe } = route.params as { recipe: Recipe };
-
   const [isExporting, setIsExporting] = useState(false);
   const [hasExported, setHasExported] = useState(false);
-
   const missingCount = recipe.missing_ingredients?.length || 0;
 
   const handleAddToShoppingList = async () => {
     if (hasExported || missingCount === 0) return;
-    
     setIsExporting(true);
     try {
       await addToShoppingList(recipe.missing_ingredients);
-      
       setHasExported(true);
-      Toast.show({
-        type: 'success',
-        text1: 'Added to Cart!',
-        text2: `${missingCount} missing items added to your shopping list.`,
-      });
+      Toast.show({ type: 'success', text1: 'Added to Cart!', text2: `${missingCount} items added.` });
     } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Export Failed',
-        text2: 'Could not add ingredients to shopping list.',
-      });
+      Toast.show({ type: 'error', text1: 'Export Failed' });
     } finally {
       setIsExporting(false);
     }
   };
 
   const handleDeleteRecipe = () => {
-    Alert.alert(
-      "Delete Recipe",
-      "Are you sure you want to remove this recipe from your history? This action cannot be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Delete", 
-          style: "destructive", 
-          onPress: async () => {
-            try {
-              await deleteRecipe(recipe.id);
-              Toast.show({
-                type: 'success',
-                text1: 'Recipe Deleted',
-                text2: 'Removed from your history.',
-              });
-              navigation.goBack();
-            } catch (error) {
-              Toast.show({
-                type: 'error',
-                text1: 'Delete Failed',
-                text2: 'Could not remove recipe. Please try again.',
-              });
-            }
-          }
+    Alert.alert("Delete", "Remove this recipe?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: async () => {
+        try { 
+          await deleteRecipe(recipe.id); 
+          navigation.goBack(); 
+        } catch (e) { 
+          Toast.show({ type: 'error', text1: 'Failed to delete' }); 
         }
-      ]
-    );
+      }}
+    ]);
   };
 
   return (
     <View className="flex-1 bg-background">
       <StatusBar barStyle="dark-content" />
       
-      {/* Header Image/Background Placeholder */}
-      <View className="h-64 bg-primary/5 items-center justify-center border-b border-border/50">
-        <Utensils size={64} color="#4F47E5" style={{ opacity: 0.1 }} />
-        
-        {/* Navigation Actions */}
-        <View className="absolute top-12 left-6 right-6 flex-row justify-between items-center">
-          <TouchableOpacity 
-            onPress={() => navigation.goBack()}
-            className="w-12 h-12 bg-white rounded-full items-center justify-center shadow-sm border border-border/50"
-          >
+      {/* Top Navigation Bar */}
+      <SafeAreaView className="bg-white border-b border-border/50">
+        <View className="px-6 py-4 flex-row items-center justify-between">
+          <TouchableOpacity onPress={() => navigation.goBack()} className="w-12 h-12 bg-secondary/50 rounded-full items-center justify-center border border-border/50">
             <ArrowLeft size={24} color="#0f172a" />
           </TouchableOpacity>
-
-          <TouchableOpacity 
-            onPress={handleDeleteRecipe}
-            className="w-12 h-12 bg-white rounded-full items-center justify-center shadow-sm border border-red-100"
-          >
-            <Trash2 size={20} color="#ef4444" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <ScrollView 
-        className="flex-1 -mt-10 bg-background rounded-t-[40px] px-6 pt-8"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Title & Stats */}
-        <View className="mb-8">
-          <View className="flex-row items-center mb-4">
-            <View className="bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex-row items-center">
-              <Sparkles size={12} color="#10b981" />
-              <Text className="text-emerald-600 font-sans-bold text-xs ml-1.5 uppercase tracking-wider">
-                {recipe.matchPercentage}% Ingredient Match
-              </Text>
-            </View>
+          <View className="flex-row">
+            <TouchableOpacity onPress={() => navigation.navigate('RecipeForm', { recipe })} className="w-12 h-12 bg-white rounded-full items-center justify-center shadow-sm border border-slate-100 mr-3">
+              <Pencil size={20} color="#64748b" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleDeleteRecipe} className="w-12 h-12 bg-white rounded-full items-center justify-center shadow-sm border border-red-50">
+              <Trash2 size={20} color="#ef4444" />
+            </TouchableOpacity>
           </View>
-          
-          <Text className="text-foreground font-sans-bold text-3xl mb-6">
+        </View>
+      </SafeAreaView>
+
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+        {/* Header Section */}
+        <View className="px-8 pt-8 pb-10 bg-white border-b border-border/50">
+          <Text className="text-slate-900 font-sans-bold text-3xl text-center leading-[42px] mt-4 mb-4">
             {recipe.title}
           </Text>
 
-          <View className="flex-row items-center gap-x-8 pb-6 border-b border-border/50">
-            <View className="flex-row items-center">
-              <View className="bg-orange-500/10 p-2 rounded-xl mr-3">
-                <Clock size={20} color="#f97316" />
-              </View>
-              <View>
-                <Text className="text-muted-foreground font-sans text-[10px] uppercase">Time</Text>
-                <Text className="text-foreground font-sans-bold text-sm">{recipe.time}</Text>
-              </View>
+          {/* Meta Badges */}
+          <View className="flex-row items-center justify-center gap-x-3 mb-2">
+            <View className="bg-indigo-50 px-4 py-2 rounded-full border border-indigo-100 flex-row items-center">
+              <Clock size={14} color="#4F47E5" />
+              <Text className="text-indigo-700 font-sans-bold text-[11px] ml-2">{recipe.time}</Text>
             </View>
-            
-            <View className="flex-row items-center">
-              <View className="bg-red-500/10 p-2 rounded-xl mr-3">
-                <Flame size={20} color="#ef4444" />
-              </View>
-              <View>
-                <Text className="text-muted-foreground font-sans text-[10px] uppercase">Calories</Text>
-                <Text className="text-foreground font-sans-bold text-sm">{recipe.calories}</Text>
-              </View>
+            <View className="bg-orange-50 px-4 py-2 rounded-full border border-orange-100 flex-row items-center">
+              <Flame size={14} color="#f97316" />
+              <Text className="text-orange-700 font-sans-bold text-[11px] ml-2">{recipe.calories}</Text>
+            </View>
+            <View className="bg-emerald-50 px-4 py-2 rounded-full border border-emerald-100 flex-row items-center">
+              <Sparkles size={14} color="#10b981" />
+              <Text className="text-emerald-700 font-sans-bold text-[11px] ml-2">{recipe.matchPercentage}% Match</Text>
             </View>
           </View>
         </View>
 
-        {/* SMART INGREDIENTS SECTION */}
-        <View className="mb-10">
-          {/* Section A: What You Need (Missing) */}
+        <View className="px-8 pt-10">
+          {/* Shopping List Integration */}
           {missingCount > 0 ? (
-            <View className="bg-amber-500/5 border border-amber-500/10 rounded-3xl p-6 mb-6">
-              <View className="flex-row items-center mb-4">
-                <AlertCircle size={20} color="#f59e0b" />
-                <Text className="text-amber-800 font-sans-bold text-lg ml-3">What You Need</Text>
+            <View className="bg-amber-50/50 border border-amber-100 rounded-[35px] p-8 mb-10">
+              <View className="flex-row items-center mb-6">
+                <AlertCircle size={22} color="#f59e0b" />
+                <Text className="text-amber-800 font-sans-bold text-xl ml-3">What You Need</Text>
               </View>
-              
-              <View className="gap-y-3 mb-6">
+              <View className="mb-8">
                 {recipe.missing_ingredients.map((item, index) => (
-                  <View key={index} className="flex-row items-center">
-                    <View className="w-1.5 h-1.5 rounded-full bg-amber-400 mr-3" />
-                    <Text className="text-amber-900 font-sans-medium text-sm">{item}</Text>
+                  <View key={index} className="flex-row items-center mb-3">
+                    <View className="w-2 h-2 rounded-full bg-amber-400 mr-4" />
+                    <Text className="text-amber-900 font-sans-medium text-base">{item}</Text>
                   </View>
                 ))}
               </View>
-
-              <TouchableOpacity 
-                onPress={handleAddToShoppingList}
-                disabled={isExporting || hasExported}
-                className={`flex-row items-center justify-center py-4 rounded-2xl border ${
-                  hasExported 
-                    ? 'bg-emerald-50 border-emerald-200' 
-                    : 'bg-amber-500 border-amber-600 shadow-sm shadow-amber-200'
-                }`}
-              >
+              <TouchableOpacity onPress={handleAddToShoppingList} disabled={isExporting || hasExported} className={`h-16 rounded-2xl flex-row items-center justify-center border ${hasExported ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-500 border-amber-600'}`}>
                 {isExporting ? (
                   <ActivityIndicator size="small" color="#ffffff" />
                 ) : hasExported ? (
-                  <>
+                  <View className="flex-row items-center">
                     <Check size={18} color="#059669" />
-                    <Text className="text-emerald-700 font-sans-bold ml-2">Missing Items Added ✓</Text>
-                  </>
+                    <Text className="text-emerald-700 font-sans-bold ml-2">Added to List ✓</Text>
+                  </View>
                 ) : (
-                  <>
+                  <View className="flex-row items-center">
                     <ShoppingCart size={18} color="#ffffff" />
-                    <Text className="text-white font-sans-bold ml-2">Add Missing to Shopping List</Text>
-                  </>
+                    <Text className="text-white font-sans-bold ml-2">Add to Shopping List</Text>
+                  </View>
                 )}
               </TouchableOpacity>
             </View>
           ) : (
-            <View className="bg-emerald-500/10 border border-emerald-500/20 rounded-3xl p-5 flex-row items-center mb-6">
-              <Check size={20} color="#10b981" />
-              <Text className="text-emerald-700 font-sans-bold ml-3 flex-1">
-                You have everything needed to cook this!
-              </Text>
+            <View className="bg-emerald-50 border border-emerald-100 rounded-[30px] p-6 flex-row items-center mb-10 shadow-sm">
+              <Check size={24} color="#10b981" />
+              <Text className="text-emerald-700 font-sans-bold ml-4 text-base">You have everything ready!</Text>
             </View>
           )}
 
-          {/* Section B: Core Ingredients (What You Have) */}
-          <View>
-            <Text className="text-foreground font-sans-bold text-xl mb-5">Core Ingredients</Text>
-            <View className="flex-row flex-wrap gap-2">
+          {/* Full Ingredient List */}
+          <View className="mb-12">
+            <Text className="text-slate-900 font-sans-bold text-2xl mb-6">Ingredients</Text>
+            <View className="flex-row flex-wrap gap-3">
               {recipe.ingredients.map((item, index) => (
-                <View 
-                  key={index} 
-                  className="bg-secondary/50 px-4 py-2.5 rounded-2xl border border-border/40 flex-row items-center"
-                >
-                  <CheckCircle2 size={14} color="#10b981" className="mr-2" />
-                  <Text className="text-foreground font-sans-medium text-sm">{item}</Text>
+                <View key={index} className="bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm flex-row items-center">
+                  <View className="mr-3">
+                    <CheckCircle2 size={16} color="#10b981" />
+                  </View>
+                  <Text className="text-slate-800 font-sans-medium text-sm">{item}</Text>
                 </View>
               ))}
             </View>
           </View>
-        </View>
 
-        {/* Substitutes Section */}
-        {recipe.substitutes && recipe.substitutes.length > 0 && (
-          <View className="mb-10 bg-indigo-50/50 rounded-3xl p-6 border border-indigo-100">
-            <View className="flex-row items-center mb-4">
-              <RotateCcw size={20} color="#4F47E5" />
-              <Text className="text-indigo-900 font-sans-bold text-lg ml-3">Smart Substitutes</Text>
-            </View>
-            
-            <View className="gap-y-3">
-              {recipe.substitutes.map((sub, index) => (
-                <View key={index} className="flex-row items-center bg-white/80 p-4 rounded-2xl border border-indigo-200/50 shadow-sm">
-                  <View className="flex-1">
-                    <Text className="text-muted-foreground font-sans text-[10px] uppercase">Out of</Text>
-                    <Text className="text-foreground font-sans-bold text-sm">{sub.original}</Text>
-                  </View>
-                  <View className="px-4">
-                    <Text className="text-indigo-400 font-sans-bold">→</Text>
-                  </View>
-                  <View className="flex-1 items-end">
-                    <Text className="text-indigo-600 font-sans text-[10px] uppercase text-right">Try using</Text>
-                    <Text className="text-indigo-700 font-sans-bold text-sm text-right">{sub.substitute}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* Instructions Timeline Section */}
-        <View className="mb-20">
-          <Text className="text-foreground font-sans-bold text-xl mb-6">Instructions</Text>
-          
-          <View className="ml-2 mt-2 pl-4 border-l-2 border-muted">
-            {recipe.instructions.map((step, index) => (
-              <View key={index} className="relative pl-6 mb-8">
-                {/* Timeline Dot */}
-                <View 
-                  className="absolute -left-[25px] top-1 w-4 h-4 rounded-full bg-primary ring-4 ring-background"
-                  style={{ 
-                    borderWidth: 3, 
-                    borderColor: '#ffffff',
-                    shadowColor: '#4F47E5',
-                    shadowOffset: { width: 0, height: 0 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 4
-                  }} 
-                />
-                
-                <Text className="text-primary font-sans-bold text-sm mb-1 uppercase tracking-wider">
-                  Step {index + 1}
-                </Text>
-                <Text className="text-foreground font-sans text-base leading-relaxed">
-                  {step}
-                </Text>
+          {/* Smart Substitutes */}
+          {recipe.substitutes && recipe.substitutes.length > 0 && (
+            <View className="mb-12 bg-indigo-50/30 rounded-[35px] p-8 border border-indigo-100">
+              <View className="flex-row items-center mb-6">
+                <RotateCcw size={22} color="#4F47E5" />
+                <Text className="text-indigo-900 font-sans-bold text-xl ml-3">Smart Substitutes</Text>
               </View>
-            ))}
+              <View>
+                {recipe.substitutes.map((sub, index) => (
+                  <View key={index} className="flex-row items-center bg-white p-5 rounded-[25px] border border-indigo-100 shadow-sm mb-4">
+                    <View className="flex-1">
+                      <Text className="text-slate-400 font-sans-bold text-[9px] uppercase tracking-wider mb-1">Out of</Text>
+                      <Text className="text-slate-900 font-sans-bold text-sm">{sub.original}</Text>
+                    </View>
+                    <View className="flex-row px-4">
+                      <ArrowLeft size={16} color="#4F47E5" style={{ transform: [{ rotate: '180deg' }] }} />
+                    </View>
+                    <View className="flex-1 items-end">
+                      <Text className="text-indigo-600 font-sans-bold text-[9px] uppercase tracking-wider mb-1">Try using</Text>
+                      <Text className="text-indigo-800 font-sans-bold text-sm text-right">{sub.substitute}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Cooking Instructions */}
+          <View className="mb-32">
+            <Text className="text-slate-900 font-sans-bold text-2xl mb-8">Instructions</Text>
+            <View className="ml-2 pl-6 border-l-2 border-slate-100">
+              {recipe.instructions.map((step, index) => (
+                <View key={index} className="relative mb-10">
+                  <View className="absolute -left-[35px] top-1.5 w-5 h-5 rounded-full bg-primary border-4 border-white shadow-md" />
+                  <Text className="text-primary font-sans-bold text-xs mb-2 uppercase tracking-[1.5px]">Step {index + 1}</Text>
+                  <Text className="text-slate-700 font-sans-medium text-base leading-relaxed">{step}</Text>
+                </View>
+              ))}
+            </View>
           </View>
         </View>
       </ScrollView>
 
-      {/* Footer CTA */}
-      <SafeAreaView className="bg-white border-t border-border/50 px-6 py-4">
+      {/* Start Cooking CTA */}
+      <SafeAreaView className="bg-white border-t border-border/50 px-8 py-6">
         <TouchableOpacity 
-          onPress={() => navigation.navigate('CookingMode', { recipe })}
-          className="bg-primary py-5 rounded-2xl flex-row items-center justify-center shadow-xl shadow-primary/20"
+          onPress={() => navigation.navigate('CookingMode', { recipe })} 
+          className="bg-primary h-20 rounded-3xl flex-row items-center justify-center shadow-2xl shadow-primary/40" 
           activeOpacity={0.9}
         >
-          <ChefHat size={20} color="white" className="mr-3" />
-          <Text className="text-white font-sans-bold text-base">Start Cooking Mode</Text>
+          <ChefHat size={24} color="white" />
+          <Text className="text-white font-sans-bold text-lg ml-3">Start Cooking Mode</Text>
         </TouchableOpacity>
       </SafeAreaView>
     </View>

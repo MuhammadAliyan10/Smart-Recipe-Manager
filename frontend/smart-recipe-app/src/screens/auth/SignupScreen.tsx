@@ -39,8 +39,8 @@ const SignupScreen = () => {
       await register(data.fullName, data.email, data.password);
       Toast.show({
         type: 'success',
-        text1: 'Account Created',
-        text2: 'Welcome to Smart Recipe Manager!',
+        text1: 'ChefSync Account Ready!',
+        text2: 'Welcome to the future of cooking.',
       });
     } catch (error: any) {
       const errorMessage = error.response?.data?.detail || 'Something went wrong during registration.';
@@ -56,9 +56,8 @@ const SignupScreen = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
-      <Loader visible={isSubmitting} message="Creating account..." />
+      <Loader visible={isSubmitting} message="Joining ChefSync..." />
       
-      {/* Background Split */}
       <View style={{ height: height * 0.5, backgroundColor: '#4F47E5', position: 'absolute', top: 0, left: 0, right: 0 }} />
       
       <KeyboardAvoidingView 
@@ -66,48 +65,41 @@ const SignupScreen = () => {
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-          {/* Top Section */}
           <View style={{ height: height * 0.35, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
-            <View style={{ marginBottom: 24 }}>
-              <CookingPot size={52} color="white" />
+            <View className="bg-white/10 p-5 rounded-3xl border border-white/20 mb-6">
+              <CookingPot size={48} color="white" />
             </View>
-            <Text style={{ color: 'white', fontFamily: 'Figtree_700Bold', fontSize: 32, textAlign: 'center' }}>
-              Join Us
-            </Text>
-            <Text style={{ color: 'rgba(255, 255, 255, 0.8)', fontFamily: 'Figtree_500Medium', marginTop: 8, textAlign: 'center' }}>
-              Create an account to start cooking
-            </Text>
+            <Text className="text-white font-sans-bold text-4xl text-center">Join ChefSync</Text>
+            <Text className="text-white/70 font-sans-medium text-base mt-2 text-center">Smart inventory, personalized recipes.</Text>
           </View>
 
-          {/* Form Card */}
           <View style={{ paddingHorizontal: 24, marginTop: -40 }}>
             <View 
               style={{ 
                 backgroundColor: '#ffffff',
-                borderRadius: 12,
+                borderRadius: 32,
                 padding: 32,
                 borderWidth: 1,
                 borderColor: 'rgba(226, 232, 240, 0.5)',
                 shadowColor: "#000",
-                shadowOffset: { width: 0, height: 10 },
+                shadowOffset: { width: 0, height: 20 },
                 shadowOpacity: 0.1,
-                shadowRadius: 20,
-                elevation: 10
+                shadowRadius: 30,
+                elevation: 15
               }}
             >
               <View>
-                {/* Full Name Input */}
                 <View>
                   <Controller
                     control={control}
                     name="fullName"
                     render={({ field: { onChange, onBlur, value } }) => (
-                      <View style={{ backgroundColor: 'rgba(241, 245, 249, 0.3)', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: errors.fullName ? 'rgba(239, 68, 68, 0.5)' : '#e2e8f0' }}>
-                        <User size={18} color="#64748b" />
+                      <View style={{ backgroundColor: '#f8fafc', borderRadius: 16, paddingHorizontal: 20, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: errors.fullName ? '#ef4444' : '#e2e8f0' }}>
+                        <User size={20} color="#64748b" />
                         <TextInput
                           placeholder="Full Name"
                           placeholderTextColor="#94a3b8"
-                          style={{ flex: 1, marginLeft: 12, fontFamily: 'Figtree_500Medium', color: '#0f172a', fontSize: 14 }}
+                          style={{ flex: 1, marginLeft: 12, fontFamily: 'Figtree_500Medium', color: '#0f172a', fontSize: 15 }}
                           onBlur={onBlur}
                           onChangeText={onChange}
                           value={value}
@@ -116,24 +108,23 @@ const SignupScreen = () => {
                     )}
                   />
                   {errors.fullName && (
-                    <Text style={{ color: '#ef4444', fontFamily: 'Figtree_500Medium', fontSize: 10, marginTop: 4, marginLeft: 4 }}>
+                    <Text className="text-red-500 font-sans-medium text-[10px] mt-2 ml-2">
                       {errors.fullName.message}
                     </Text>
                   )}
                 </View>
 
-                {/* Email Input */}
                 <View style={{ marginTop: 16 }}>
                   <Controller
                     control={control}
                     name="email"
                     render={({ field: { onChange, onBlur, value } }) => (
-                      <View style={{ backgroundColor: 'rgba(241, 245, 249, 0.3)', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: errors.email ? 'rgba(239, 68, 68, 0.5)' : '#e2e8f0' }}>
-                        <Mail size={18} color="#64748b" />
+                      <View style={{ backgroundColor: '#f8fafc', borderRadius: 16, paddingHorizontal: 20, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: errors.email ? '#ef4444' : '#e2e8f0' }}>
+                        <Mail size={20} color="#64748b" />
                         <TextInput
                           placeholder="Email Address"
                           placeholderTextColor="#94a3b8"
-                          style={{ flex: 1, marginLeft: 12, fontFamily: 'Figtree_500Medium', color: '#0f172a', fontSize: 14 }}
+                          style={{ flex: 1, marginLeft: 12, fontFamily: 'Figtree_500Medium', color: '#0f172a', fontSize: 15 }}
                           onBlur={onBlur}
                           onChangeText={onChange}
                           value={value}
@@ -144,56 +135,53 @@ const SignupScreen = () => {
                     )}
                   />
                   {errors.email && (
-                    <Text style={{ color: '#ef4444', fontFamily: 'Figtree_500Medium', fontSize: 10, marginTop: 4, marginLeft: 4 }}>
+                    <Text className="text-red-500 font-sans-medium text-[10px] mt-2 ml-2">
                       {errors.email.message}
                     </Text>
                   )}
                 </View>
 
-                {/* Password Input */}
                 <View style={{ marginTop: 16 }}>
                   <Controller
                     control={control}
                     name="password"
                     render={({ field: { onChange, onBlur, value } }) => (
-                      <View style={{ backgroundColor: 'rgba(241, 245, 249, 0.3)', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: errors.password ? 'rgba(239, 68, 68, 0.5)' : '#e2e8f0' }}>
-                        <Lock size={18} color="#64748b" />
+                      <View style={{ backgroundColor: '#f8fafc', borderRadius: 16, paddingHorizontal: 20, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: errors.password ? '#ef4444' : '#e2e8f0' }}>
+                        <Lock size={20} color="#64748b" />
                         <TextInput
                           placeholder="Password"
                           placeholderTextColor="#94a3b8"
-                          style={{ flex: 1, marginLeft: 12, fontFamily: 'Figtree_500Medium', color: '#0f172a', fontSize: 14 }}
+                          style={{ flex: 1, marginLeft: 12, fontFamily: 'Figtree_500Medium', color: '#0f172a', fontSize: 15 }}
                           onBlur={onBlur}
                           onChangeText={onChange}
                           value={value}
                           secureTextEntry={!showPassword}
                         />
                         <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                          {showPassword ? <EyeOff size={18} color="#94a3b8" /> : <Eye size={18} color="#94a3b8" />}
+                          {showPassword ? <EyeOff size={20} color="#94a3b8" /> : <Eye size={20} color="#94a3b8" />}
                         </TouchableOpacity>
                       </View>
                     )}
                   />
                   {errors.password && (
-                    <Text style={{ color: '#ef4444', fontFamily: 'Figtree_500Medium', fontSize: 10, marginTop: 4, marginLeft: 4 }}>
+                    <Text className="text-red-500 font-sans-medium text-[10px] mt-2 ml-2">
                       {errors.password.message}
                     </Text>
                   )}
                 </View>
 
-                {/* Signup Button */}
                 <TouchableOpacity 
                   onPress={handleSubmit(onSubmit)}
                   activeOpacity={0.9}
-                  style={{ backgroundColor: '#4F47E5', height: 56, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginTop: 24, shadowColor: '#4F47E5', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 }}
+                  style={{ backgroundColor: '#4F47E5', height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginTop: 32, shadowColor: '#4F47E5', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 15, elevation: 8 }}
                 >
-                  <Text style={{ color: 'white', fontFamily: 'Figtree_700Bold', fontSize: 16 }}>Create Account</Text>
+                  <Text className="text-white font-sans-bold text-lg">Create Account</Text>
                 </TouchableOpacity>
 
-                {/* Footer */}
-                <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 24 }}>
-                  <Text style={{ color: '#64748b', fontFamily: 'Figtree_500Medium', fontSize: 14 }}>Already have an account? </Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 28 }}>
+                  <Text className="text-slate-500 font-sans-medium text-sm">Already have an account? </Text>
                   <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                    <Text style={{ color: '#4F47E5', fontFamily: 'Figtree_700Bold', fontSize: 14 }}>Log In</Text>
+                    <Text className="text-primary font-sans-bold text-sm">Log In</Text>
                   </TouchableOpacity>
                 </View>
               </View>

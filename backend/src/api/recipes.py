@@ -74,6 +74,8 @@ async def generate_ai_recipes(
 
 @router.get("/history", response_model=RecipeListResponse)
 async def get_recipe_history(
+    limit: int = 10,
+    offset: int = 0,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -83,11 +85,67 @@ async def get_recipe_history(
     recipes = db.query(SavedRecipe)\
         .filter(SavedRecipe.user_id == current_user.id)\
         .order_by(SavedRecipe.created_at.desc())\
+        .limit(limit)\
+        .offset(offset)\
         .all()
     
     return RecipeListResponse(
         recipes=[RecipeSchema.model_validate(r) for r in recipes]
     )
+
+@router.post("", response_model=RecipeSchema)
+async def create_manual_recipe(
+    recipe_data: RecipeSchema,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Manually create a new recipe.
+    """
+    new_recipe = SavedRecipe(
+        title=recipe_data.title,
+        match_percentage=100, # Manual recipes are 100% by default
+        time=recipe_data.time,
+        calories=recipe_data.calories,
+        ingredients=recipe_data.ingredients,
+        instructions=recipe_data.instructions,
+        missing_ingredients=recipe_data.missing_ingredients or [],
+        substitutes=[s.model_dump() for s in recipe_data.substitutes] if recipe_data.substitutes else [],
+        user_id=current_user.id
+    )
+    db.add(new_recipe)
+    db.commit()
+    db.refresh(new_recipe)
+    return RecipeSchema.model_validate(new_recipe)
+
+@router.put("/{recipe_id}", response_model=RecipeSchema)
+async def update_recipe(
+    recipe_id: int,
+    recipe_data: RecipeSchema,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Update an existing recipe's details.
+    """
+    db_recipe = db.query(SavedRecipe)\
+        .filter(SavedRecipe.id == recipe_id, SavedRecipe.user_id == current_user.id)\
+        .first()
+    
+    if not db_recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    
+    db_recipe.title = recipe_data.title
+    db_recipe.time = recipe_data.time
+    db_recipe.calories = recipe_data.calories
+    db_recipe.ingredients = recipe_data.ingredients
+    db_recipe.instructions = recipe_data.instructions
+    db_recipe.missing_ingredients = recipe_data.missing_ingredients
+    db_recipe.substitutes = [s.model_dump() for s in recipe_data.substitutes] if recipe_data.substitutes else []
+    
+    db.commit()
+    db.refresh(db_recipe)
+    return RecipeSchema.model_validate(db_recipe)
 
 @router.delete("/{recipe_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_recipe(

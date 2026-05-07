@@ -1,6 +1,6 @@
 // src/screens/SettingsScreen.tsx
 import React from 'react';
-import { ScrollView, View, StatusBar, SafeAreaView } from 'react-native';
+import { ScrollView, View, StatusBar, SafeAreaView, Text } from 'react-native';
 import { 
   User, 
   Lock, 
@@ -104,6 +104,12 @@ const SettingsScreen = () => {
             danger 
             onPress={handleLogout} 
           />
+
+          {/* Rebranding Watermark */}
+          <View className="mt-12 items-center opacity-20">
+            <Text className="text-slate-400 font-sans-bold text-[10px] uppercase tracking-[4px]">Powered by ChefSync</Text>
+            <Text className="text-slate-300 font-sans-medium text-[8px] mt-1">Version 1.1.0</Text>
+          </View>
         </ScrollView>
       </SafeAreaView>
     </View>

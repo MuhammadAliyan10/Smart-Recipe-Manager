@@ -44,6 +44,9 @@ EXPECTED EXACT SCHEMA FORMAT:
   ],
   "unrecognized_text": "string"
 }
+
+STRICT CATEGORY ENFORCEMENT:
+For each item's 'category', you MUST strictly choose ONLY from this exact list: ['Produce', 'Dairy', 'Protein', 'Pantry', 'Spices', 'Snacks', 'Beverages', 'Other']. Do not invent new categories.
 """
 
         payload = {

@@ -51,9 +51,15 @@ const DashboardScreen = () => {
       return [{ value: 1, color: '#f1f5f9', label: 'Empty' }];
     }
 
+    const validCategories = ['Produce', 'Dairy', 'Protein', 'Pantry', 'Spices', 'Snacks', 'Beverages', 'Other'];
     const categories: Record<string, number> = {};
+    
     items.forEach(item => {
-      categories[item.category] = (categories[item.category] || 0) + 1;
+      // Normalize category to Title Case and check against valid list
+      const normalized = item.category.charAt(0).toUpperCase() + item.category.slice(1).toLowerCase();
+      const finalCategory = validCategories.includes(normalized) ? normalized : 'Other';
+      
+      categories[finalCategory] = (categories[finalCategory] || 0) + 1;
     });
 
     const colors = ['#4F47E5', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
