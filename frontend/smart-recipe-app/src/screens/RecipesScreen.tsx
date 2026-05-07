@@ -1,107 +1,92 @@
 // src/screens/RecipesScreen.tsx
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  SafeAreaView, 
-  FlatList, 
-  StatusBar, 
-  Dimensions,
-  Platform
-} from 'react-native';
-import { ChefHat } from 'lucide-react-native';
+import { View, FlatList, SafeAreaView, StatusBar, Text } from 'react-native';
+import Toast from 'react-native-toast-message';
+import { generateRecipes, Recipe } from '../api/recipes';
 
 // Components
 import ScreenHeader from '../components/ui/ScreenHeader';
-import RecipeCard, { Recipe } from '../components/recipes/RecipeCard';
+import RecipeCard from '../components/recipes/RecipeCard';
 import GenerateRecipeCTA from '../components/recipes/GenerateRecipeCTA';
 import Loader from '../components/ui/Loader';
-
-const { height } = Dimensions.get('window');
 
 const RecipesScreen = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     setIsGenerating(true);
-    setTimeout(() => {
-      const mockRecipes: Recipe[] = [
-        {
-          id: '1',
-          title: 'Mediterranean Quinoa Salad',
-          matchPercentage: 98,
-          time: '15 min',
-          calories: '340 kcal',
-          ingredients: ['Quinoa', 'Cucumber', 'Feta', 'Olives', 'Lemon']
-        },
-        {
-          id: '2',
-          title: 'Lemon Garlic Roasted Chicken',
-          matchPercentage: 85,
-          time: '45 min',
-          calories: '520 kcal',
-          ingredients: ['Chicken Breast', 'Lemon', 'Garlic', 'Rosemary']
-        },
-        {
-          id: '3',
-          title: 'Creamy Mushroom Pasta',
-          matchPercentage: 92,
-          time: '20 min',
-          calories: '610 kcal',
-          ingredients: ['Penne', 'Mushrooms', 'Cream', 'Parmesan', 'Parsley']
-        }
-      ];
-      setRecipes(mockRecipes);
+    try {
+      const data = await generateRecipes();
+      setRecipes(data);
+      
+      Toast.show({
+        type: 'success',
+        text1: 'Recipes Ready!',
+        text2: `AI found ${data.length} delicious meals for you.`,
+      });
+    } catch (error: any) {
+      console.error("[RECIPES] Generation error:", error);
+      
+      const errorMessage = error.response?.data?.detail || "Could not generate recipes. Check your connection.";
+      
+      Toast.show({
+        type: 'error',
+        text1: 'Generation Failed',
+        text2: errorMessage,
+      });
+    } finally {
       setIsGenerating(false);
-    }, 3000);
+    }
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
+    <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
       <StatusBar barStyle="dark-content" />
-      <Loader visible={isGenerating} message="AI Chef is thinking..." />
+      <Loader visible={isGenerating} message="AI is crafting your menu..." />
+      
+      <SafeAreaView style={{ flex: 1 }}>
+        <ScreenHeader 
+          title="AI Chef" 
+          subtitle="Smart recipes based on your pantry" 
+        />
 
-      <ScreenHeader 
-        title="AI Chef"
-        subtitle="Smart recipes based on your pantry"
-      />
-
-      {recipes.length === 0 ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40, marginTop: -60 }}>
-          <View style={{ backgroundColor: 'rgba(79, 71, 229, 0.05)', padding: 40, borderRadius: 100, marginBottom: 32 }}>
-            <ChefHat size={80} color="#4F47E5" opacity={0.3} />
-          </View>
-          <Text style={{ fontSize: 20, fontWeight: '700', color: '#0f172a', textAlign: 'center', fontFamily: 'Figtree_700Bold' }}>
-            Ready to cook something?
-          </Text>
-          <Text style={{ fontSize: 14, color: '#64748b', textAlign: 'center', marginTop: 12, marginBottom: 40, lineHeight: 22, fontFamily: 'Figtree_400Regular' }}>
-            Tap the button below to analyze your current pantry and generate personalized meal suggestions.
-          </Text>
-          <View style={{ width: '100%' }}>
-            <GenerateRecipeCTA onPress={handleGenerate} />
-          </View>
-        </View>
-      ) : (
         <FlatList
           data={recipes}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <RecipeCard recipe={item} />}
-          style={{ flex: 1, paddingHorizontal: 24 }}
-          contentContainerStyle={{ paddingBottom: 120, paddingTop: 10 }}
-          showsVerticalScrollIndicator={false}
-          ListFooterComponent={() => (
-            <View style={{ marginTop: 16, marginBottom: 40 }}>
-              <GenerateRecipeCTA 
-                onPress={handleGenerate} 
-                label="Regenerate Suggestions" 
-                isSecondary 
-              />
-            </View>
+          keyExtractor={(item, index) => `${item.title}-${index}`}
+          renderItem={({ item }) => (
+            <RecipeCard 
+              title={item.title}
+              matchPercentage={item.matchPercentage}
+              time={item.time}
+              calories={item.calories}
+              ingredients={item.ingredients}
+            />
           )}
+          ListHeaderComponent={
+            <GenerateRecipeCTA 
+              onPress={handleGenerate} 
+              isGenerating={isGenerating} 
+            />
+          }
+          ListEmptyComponent={
+            !isGenerating ? (
+              <View style={{ padding: 40, alignItems: 'center' }}>
+                <Text style={{ color: '#94a3b8', fontFamily: 'Figtree_500Medium', textAlign: 'center' }}>
+                  No recipes generated yet. Tap the button above to let the AI analyze your pantry.
+                </Text>
+              </View>
+            ) : null
+          }
+          contentContainerStyle={{ 
+            paddingHorizontal: 24, 
+            paddingTop: 12, 
+            paddingBottom: 40 
+          }}
+          showsVerticalScrollIndicator={false}
         />
-      )}
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 };
 

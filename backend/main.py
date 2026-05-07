@@ -8,6 +8,7 @@ from src.api.routes import router as extraction_router
 from src.api.auth import router as auth_router
 from src.api.users import router as user_router
 from src.api.ingredients import router as history_router
+from src.api.recipes import router as recipe_router
 
 # Initialize database schema in Neon
 print("[BOOT] Connecting to Neon and verifying schema...")
@@ -41,6 +42,7 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/v1")
 app.include_router(user_router, prefix="/v1")
 app.include_router(history_router, prefix="/v1")
+app.include_router(recipe_router)
 app.include_router(extraction_router)
 
 @app.get("/health")

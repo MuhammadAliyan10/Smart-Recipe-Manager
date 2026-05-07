@@ -1,16 +1,10 @@
 // src/screens/PantryScreen.tsx
-import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  SafeAreaView, 
-  FlatList, 
-  RefreshControl,
-  StatusBar,
-  TouchableOpacity
-} from 'react-native';
-import { fetchPantryItems, IngredientItem } from '../api/pantry';
-import { Search, Filter, Plus } from 'lucide-react-native';
+import React, { useState, useCallback } from 'react';
+import { View, FlatList, RefreshControl, Text, TouchableOpacity, SafeAreaView, StatusBar } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { RefreshCcw } from 'lucide-react-native';
+import Toast from 'react-native-toast-message';
+import { fetchPantryItems, deletePantryItem, IngredientItem } from '../api/pantry';
 
 // Components
 import ScreenHeader from '../components/ui/ScreenHeader';
@@ -22,92 +16,115 @@ const PantryScreen = () => {
   const [items, setItems] = useState<IngredientItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const loadItems = useCallback(async (showLoader = false) => {
-    if (showLoader) setIsLoading(true);
+  const loadPantry = useCallback(async (showRefreshing = false) => {
+    if (showRefreshing) setIsRefreshing(true);
+    else if (items.length === 0) setIsLoading(true);
+    
+    setError(null);
     try {
       const data = await fetchPantryItems();
       setItems(data);
-    } catch (error) {
-      console.error("[PANTRY] Load failed:", error);
+    } catch (err: any) {
+      setError("Failed to synchronize pantry.");
+      console.error("[PANTRY] Load error:", err);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, []);
+  }, [items.length]);
 
-  useEffect(() => {
-    loadItems(true);
-  }, [loadItems]);
-
-  const onRefresh = () => {
-    setIsRefreshing(true);
-    loadItems();
-  };
-
-  const rightElement = (
-    <TouchableOpacity 
-      style={{ 
-        backgroundColor: 'rgba(79, 71, 229, 0.1)', 
-        padding: 10, 
-        borderRadius: 100 
-      }}
-    >
-      <Plus size={20} color="#4F47E5" />
-    </TouchableOpacity>
+  useFocusEffect(
+    useCallback(() => {
+      loadPantry();
+    }, [loadPantry])
   );
 
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
-      <StatusBar barStyle="dark-content" />
-      <Loader visible={isLoading} message="Fetching pantry..." />
+  const handleDelete = async (id: number | string) => {
+    // Optimistic UI Update
+    const previousItems = [...items];
+    setItems(items.filter(item => item.id !== id));
 
-      <ScreenHeader 
-        title="Your Pantry"
-        subtitle={`${items.length} ingredients in stock`}
-        rightElement={rightElement}
-      />
+    try {
+      await deletePantryItem(id);
+      Toast.show({
+        type: 'success',
+        text1: 'Item Removed',
+        text2: 'Pantry inventory updated successfully.',
+      });
+    } catch (err) {
+      // Revert on failure
+      setItems(previousItems);
+      Toast.show({
+        type: 'error',
+        text1: 'Delete Failed',
+        text2: 'Could not remove item. Please try again.',
+      });
+    }
+  };
 
-      <View style={{ paddingHorizontal: 24, paddingBottom: 16 }}>
-        {/* Search & Filter Placeholders */}
-        <View style={{ flexDirection: 'row', gap: 12 }}>
-          <View style={{ flex: 1, backgroundColor: '#f1f5f9', borderRadius: 12, px: 16, padding: 12, flexDirection: 'row', alignItems: 'center' }}>
-            <Search size={16} color="#94a3b8" />
-            <Text style={{ marginLeft: 12, color: '#94a3b8', fontSize: 14, fontFamily: 'Figtree_400Regular' }}>Search ingredients...</Text>
-          </View>
-          <View style={{ backgroundColor: '#f1f5f9', borderRadius: 12, padding: 12, alignItems: 'center', justifyContent: 'center' }}>
-            <Filter size={16} color="#94a3b8" />
-          </View>
+  if (error && items.length === 0) {
+    return (
+      <SafeAreaView className="flex-1 bg-background items-center justify-center px-10">
+        <View className="bg-red-50 p-6 rounded-full mb-6">
+          <RefreshCcw size={40} color="#ef4444" />
         </View>
-      </View>
+        <Text className="text-xl font-sans-bold text-foreground text-center">Sync Failed</Text>
+        <Text className="text-sm font-sans text-muted-foreground text-center mt-3 mb-10 leading-5">
+          We couldn't connect to your pantry. Check your connection and try again.
+        </Text>
+        <TouchableOpacity 
+          onPress={() => loadPantry()}
+          className="bg-primary px-10 py-4 rounded-xl"
+        >
+          <Text className="text-white font-sans-bold">Retry Sync</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
 
-      <FlatList
-        data={items}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <PantryItemCard 
-            name={item.name}
-            quantity={item.quantity}
-            category={item.category}
-          />
-        )}
-        style={{ flex: 1, paddingHorizontal: 24 }}
-        contentContainerStyle={{ 
-          paddingBottom: 120,
-          paddingTop: 10 
-        }}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={!isLoading ? PantryEmptyState : null}
-        refreshControl={
-          <RefreshControl 
-            refreshing={isRefreshing} 
-            onRefresh={onRefresh}
-            tintColor="#4F47E5"
-            colors={["#4F47E5"]}
-          />
-        }
-      />
-    </SafeAreaView>
+  return (
+    <View className="flex-1 bg-background">
+      <StatusBar barStyle="dark-content" />
+      <Loader visible={isLoading && items.length === 0} message="Opening pantry..." />
+      
+      <SafeAreaView className="flex-1">
+        <ScreenHeader 
+          title="Your Pantry" 
+          subtitle="Manage your active ingredients" 
+        />
+
+        <FlatList
+          data={items}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <PantryItemCard 
+              id={item.id}
+              name={item.name}
+              quantity={item.quantity}
+              category={item.category}
+              onDelete={handleDelete}
+            />
+          )}
+          contentContainerStyle={{ 
+            paddingHorizontal: 24, 
+            paddingTop: 12, 
+            paddingBottom: 140 // Ensures last item clears the Tab Bar FAB
+          }}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={!isLoading ? <PantryEmptyState /> : null}
+          refreshControl={
+            <RefreshControl 
+              refreshing={isRefreshing} 
+              onRefresh={() => loadPantry(true)} 
+              tintColor="#4F47E5"
+              colors={["#4F47E5"]}
+            />
+          }
+        />
+      </SafeAreaView>
+    </View>
   );
 };
 

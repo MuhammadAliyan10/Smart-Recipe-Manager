@@ -25,3 +25,15 @@ export const fetchPantryItems = async (): Promise<IngredientItem[]> => {
     throw error;
   }
 };
+
+/**
+ * Deletes a specific ingredient from the pantry.
+ */
+export const deletePantryItem = async (id: number | string): Promise<void> => {
+  try {
+    await client.delete(`/v1/ingredients/${id}`);
+  } catch (error) {
+    console.error(`[API] Failed to delete item ${id}:`, error);
+    throw error;
+  }
+};

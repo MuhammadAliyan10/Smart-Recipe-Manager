@@ -1,33 +1,27 @@
 // src/components/settings/ProfileHeader.tsx
 import React from 'react';
-import { View, Text, Image } from 'react-native';
+import { View, Text } from 'react-native';
 import { User as UserIcon } from 'lucide-react-native';
 
 interface ProfileHeaderProps {
-  fullName?: string;
-  email?: string;
-  pfpUrl?: string;
+  fullName: string;
+  email: string;
 }
 
-const ProfileHeader: React.FC<ProfileHeaderProps> = ({ fullName, email, pfpUrl }) => {
+const ProfileHeader: React.FC<ProfileHeaderProps> = ({ fullName, email }) => {
   return (
-    <View className="flex-row items-center px-6 py-8 bg-white border-b border-border/30">
-      <View className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 items-center justify-center overflow-hidden">
-        {pfpUrl ? (
-          <Image source={{ uri: pfpUrl }} className="w-full h-full" />
-        ) : (
-          <UserIcon size={32} color="#4F47E5" />
-        )}
+    <View className="items-center py-10 border-b border-border bg-card">
+      <View className="w-24 h-24 bg-primary/10 rounded-full items-center justify-center border-4 border-background shadow-sm">
+        <UserIcon size={40} color="#4F47E5" />
       </View>
       
-      <View className="ml-5 flex-1">
-        <Text className="text-xl font-sans-bold text-foreground">
-          {fullName || 'Guest User'}
-        </Text>
-        <Text className="text-sm font-sans text-muted-foreground mt-1">
-          {email || 'Not signed in'}
-        </Text>
-      </View>
+      <Text className="font-sans-bold text-2xl text-foreground mt-4">
+        {fullName}
+      </Text>
+      
+      <Text className="font-sans text-muted-foreground mt-1">
+        {email}
+      </Text>
     </View>
   );
 };

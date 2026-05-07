@@ -11,8 +11,17 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise ValueError("CRITICAL: DATABASE_URL not found in environment.")
 
-# PostgreSQL handles threading differently than SQLite; no connect_args needed
-engine = create_engine(DATABASE_URL)
+# Neon/Postgres optimization: 
+# 1. pool_pre_ping=True: Checks connection health before use (fixes 'SSL connection closed')
+# 2. pool_recycle=300: Refreshes connections every 5 minutes to prevent idle timeouts
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,
+    pool_recycle=300,
+    pool_size=5,
+    max_overflow=10
+)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()

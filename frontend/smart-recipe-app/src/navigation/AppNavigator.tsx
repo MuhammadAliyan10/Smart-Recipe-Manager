@@ -1,6 +1,5 @@
 import React, { useEffect, useCallback } from 'react';
-import { View, ActivityIndicator, Text } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { View, ActivityIndicator } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as SplashScreen from 'expo-splash-screen';
 import { 
@@ -59,7 +58,7 @@ const AppNavigator = () => {
   // Fallback to avoid black screen if fonts take too long
   if (!fontsLoaded && !fontError) {
     return (
-      <View style={{ flex: 1, backgroundColor: 'white', justifyContent: 'center', itemsCenter: 'center' }}>
+      <View style={{ flex: 1, backgroundColor: 'white', justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#4F47E5" />
       </View>
     );
@@ -75,15 +74,13 @@ const AppNavigator = () => {
 
   return (
     <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-      <NavigationContainer>
-        <RootStack.Navigator screenOptions={{ headerShown: false }}>
-          {userToken == null ? (
-            <RootStack.Screen name="Auth" component={AuthNavigator} />
-          ) : (
-            <RootStack.Screen name="Main" component={MainTabs} />
-          )}
-        </RootStack.Navigator>
-      </NavigationContainer>
+      <RootStack.Navigator screenOptions={{ headerShown: false }}>
+        {userToken == null ? (
+          <RootStack.Screen name="Auth" component={AuthNavigator} />
+        ) : (
+          <RootStack.Screen name="Main" component={MainTabs} />
+        )}
+      </RootStack.Navigator>
     </View>
   );
 };

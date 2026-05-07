@@ -1,6 +1,6 @@
 // src/components/pantry/PantryItemCard.tsx
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { 
   Beef, 
   Milk, 
@@ -8,13 +8,16 @@ import {
   Package, 
   Leaf, 
   Coffee,
-  LucideIcon
+  LucideIcon,
+  Trash2
 } from 'lucide-react-native';
 
 interface PantryItemCardProps {
+  id: number | string;
   name: string;
   quantity: string;
   category: string;
+  onDelete?: (id: number | string) => void;
 }
 
 const getCategoryIcon = (category: string): LucideIcon => {
@@ -27,8 +30,23 @@ const getCategoryIcon = (category: string): LucideIcon => {
   return Package;
 };
 
-const PantryItemCard: React.FC<PantryItemCardProps> = ({ name, quantity, category }) => {
+const PantryItemCard: React.FC<PantryItemCardProps> = ({ id, name, quantity, category, onDelete }) => {
   const Icon = getCategoryIcon(category);
+
+  const confirmDelete = () => {
+    Alert.alert(
+      "Remove Item",
+      `Are you sure you want to remove "${name}" from your pantry?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Remove", 
+          style: "destructive", 
+          onPress: () => onDelete?.(id) 
+        }
+      ]
+    );
+  };
 
   return (
     <View className="flex-row items-center justify-between p-4 mb-3 bg-card border border-border rounded-xl">
@@ -49,10 +67,17 @@ const PantryItemCard: React.FC<PantryItemCardProps> = ({ name, quantity, categor
         </View>
       </View>
 
-      <View className="items-end ml-4">
-        <Text className="text-muted-foreground font-sans-medium text-xs">
+      <View className="flex-row items-center ml-4">
+        <Text className="text-muted-foreground font-sans-medium text-xs mr-4">
           {quantity}
         </Text>
+        
+        <TouchableOpacity 
+          onPress={confirmDelete}
+          className="p-2 -mr-2"
+        >
+          <Trash2 size={18} color="#ef4444" />
+        </TouchableOpacity>
       </View>
     </View>
   );

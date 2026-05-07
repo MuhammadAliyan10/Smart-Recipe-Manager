@@ -52,3 +52,15 @@ class ExtractionResult(BaseModel):
 class PersistenceResponse(BaseModel):
     saved_items: List[IngredientResponse]
     unrecognized_text: str
+
+# --- Recipe Schemas ---
+
+class Recipe(BaseModel):
+    title: str = Field(..., description="Appealing title of the recipe")
+    matchPercentage: int = Field(..., description="How well this recipe matches user ingredients (0-100)")
+    time: str = Field(..., description="Prep and cook time (e.g., '25 min')")
+    calories: str = Field(..., description="Estimated calories per serving")
+    ingredients: List[str] = Field(..., description="List of key ingredient names used")
+
+class RecipeListResponse(BaseModel):
+    recipes: List[Recipe]

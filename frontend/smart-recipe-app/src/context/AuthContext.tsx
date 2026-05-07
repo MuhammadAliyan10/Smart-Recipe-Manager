@@ -1,3 +1,4 @@
+// src/context/AuthContext.tsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import client from '../api/client';
@@ -32,30 +33,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: { Authorization: `Bearer ${token}` }
       });
       setUser(response.data);
-    } catch (error) {
-      console.error("[AUTH] Profile fetch failed. Session might be expired.");
-      await logout();
+      return response.data;
+    } catch (error: any) {
+      console.error("[AUTH] Profile fetch failed:", error.message);
+      // We do NOT call logout() here. 
+      // The Axios interceptor in client.ts handles 401 (expiry) by clearing AsyncStorage.
+      // For 500 or network errors, we want to keep the token and retry later.
+      throw error;
     }
   };
 
   const refreshUser = async () => {
     if (userToken) {
-      await fetchUserProfile(userToken);
+      try {
+        await fetchUserProfile(userToken);
+      } catch (e) {
+        // Silent fail for background refresh
+      }
     }
   };
 
   useEffect(() => {
     const loadBootState = async () => {
       try {
-        console.log("[BOOT] Restoring session from storage...");
+        console.log("[BOOT] Checking secure storage...");
         const storedToken = await AsyncStorage.getItem('userToken');
         
         if (storedToken) {
+          console.log("[BOOT] Token found. Restoring session.");
           setUserToken(storedToken);
-          await fetchUserProfile(storedToken);
+          // Attempt to load profile, but don't block boot if it's just a network error
+          try {
+            await fetchUserProfile(storedToken);
+          } catch (e) {
+            console.warn("[BOOT] Profile sync failed, but session kept.");
+          }
+        } else {
+          console.log("[BOOT] No token found. Routing to Auth.");
         }
       } catch (error) {
-        console.error("[BOOT] Session restoration failed:", error);
+        console.error("[BOOT] Session restoration critical failure:", error);
       } finally {
         setIsLoading(false);
       }
@@ -66,9 +83,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     try {
-      // FastAPI OAuth2PasswordRequestForm requires x-www-form-urlencoded
       const params = new URLSearchParams();
-      params.append('username', email); // backend expects 'username' for the identifier
+      params.append('username', email);
       params.append('password', password);
 
       const response = await client.post('/v1/auth/token', params.toString(), {
@@ -80,11 +96,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const { access_token } = response.data;
       
-      // Persist token
       await AsyncStorage.setItem('userToken', access_token);
       setUserToken(access_token);
-      
-      // Load user profile
       await fetchUserProfile(access_token);
       
       console.log("[AUTH] Login successful. Session persisted.");
@@ -98,7 +111,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (fullName: string, email: string, password: string) => {
     try {
-      // Standard JSON request for registration
       await client.post('/v1/auth/register', {
         email,
         password,
@@ -106,12 +118,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       console.log("[AUTH] Registration successful. Triggering auto-login.");
-      
-      // Automatic login after successful registration
       await login(email, password);
     } catch (error: any) {
       const detail = error.response?.data?.detail;
-      const message = typeof detail === 'string' ? detail : 'Could not create account. Email may already be in use.';
+      const message = typeof detail === 'string' ? detail : 'Could not create account.';
       console.error('[AUTH] Registration error:', message);
       throw new Error(message);
     }
@@ -122,7 +132,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await AsyncStorage.removeItem('userToken');
       setUserToken(null);
       setUser(null);
-      console.log("[AUTH] Session cleared. User logged out.");
+      console.log("[AUTH] Session cleared.");
     } catch (error) {
       console.error('[AUTH] Logout failed:', error);
     }
@@ -137,8 +147,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };

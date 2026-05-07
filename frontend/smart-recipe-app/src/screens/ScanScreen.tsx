@@ -1,171 +1,236 @@
 // src/screens/ScanScreen.tsx
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, Platform, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Linking } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { AlertCircle } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
-import client from '../api/client';
+import { CameraOff, ArrowLeft } from 'lucide-react-native';
+
+// API & Types
+import { uploadReceipt, ExtractionResponse } from '../api/scanner';
 
 // Components
 import CameraOverlay from '../components/scanner/CameraOverlay';
 import ProcessingState from '../components/scanner/ProcessingState';
 import SuccessSummary from '../components/scanner/SuccessSummary';
 
-interface Ingredient {
-  name: string;
-  quantity: string;
-  category: string;
-  confidence_score: number;
-}
-
-interface ExtractionResponse {
-  saved_items: Ingredient[];
-  unrecognized_text: string;
-}
+type ScanState = 'idle' | 'processing' | 'success';
 
 const ScanScreen = () => {
-  const [permission, requestPermission] = useCameraPermissions();
-  const [scanState, setScanState] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
-  const [flashMode, setFlashMode] = useState(false);
-  const [scanResults, setScanResults] = useState<ExtractionResponse | null>(null);
-  
-  const cameraRef = useRef<CameraView>(null);
+  const isFocused = useIsFocused();
   const navigation = useNavigation<any>();
+  const [permission, requestPermission] = useCameraPermissions();
+  const cameraRef = useRef<any>(null);
 
+  // State Management
+  const [scanState, setScanState] = useState<ScanState>('idle');
+  const [flashMode, setFlashMode] = useState(false);
+  const [scannedData, setScannedData] = useState<ExtractionResponse | null>(null);
+
+  const handleCapture = async () => {
+    if (!cameraRef.current || scanState !== 'idle') return;
+
+    try {
+      setScanState('processing');
+
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 0.8,
+        skipProcessing: true,
+      });
+
+      const manipResult = await ImageManipulator.manipulateAsync(
+        photo.uri,
+        [{ resize: { width: 1080 } }],
+        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+      );
+
+      const result = await uploadReceipt(manipResult.uri);
+      setScannedData(result);
+      setScanState('success');
+      
+    } catch (error: any) {
+      console.error("[SCAN] Workflow failure:", error);
+      Toast.show({
+        type: 'error',
+        text1: 'Scan Failed',
+        text2: error.response?.data?.detail || 'Failed to analyze receipt.',
+      });
+      setScanState('idle');
+    }
+  };
+
+  const handleClose = () => {
+    navigation.goBack();
+  };
+
+  const handlePermissionRequest = async () => {
+    if (permission?.canAskAgain) {
+      await requestPermission();
+    } else {
+      Linking.openSettings();
+    }
+  };
+
+  // Permission Guard
   if (!permission) {
     return <View style={{ flex: 1, backgroundColor: '#ffffff' }} />;
   }
 
   if (!permission.granted) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 }}>
-          <View style={{ backgroundColor: 'rgba(79, 71, 229, 0.05)', padding: 32, borderRadius: 100, marginBottom: 24, justifyContent: 'center', alignItems: 'center' }}>
-            <AlertCircle size={64} color="#4F47E5" />
+      <View style={styles.permissionContainer}>
+        <StatusBar barStyle="dark-content" />
+        <SafeAreaView style={{ flex: 1 }}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={handleClose} style={styles.backButton}>
+              <ArrowLeft size={24} color="#0f172a" />
+            </TouchableOpacity>
           </View>
-          <Text style={{ fontSize: 22, fontWeight: '700', color: '#0f172a', textAlign: 'center', fontFamily: 'Figtree_700Bold' }}>
-            Camera Access Required
-          </Text>
-          <Text style={{ fontSize: 14, color: '#64748b', textAlign: 'center', marginTop: 12, marginBottom: 40, lineHeight: 22, fontFamily: 'Figtree_400Regular' }}>
-            We need your permission to use the camera to scan receipts and extract ingredients for your pantry.
-          </Text>
-          <TouchableOpacity 
-            onPress={requestPermission}
-            style={{ 
-              backgroundColor: '#4F47E5', 
-              width: '100%', 
-              paddingVertical: 16, 
-              borderRadius: 12, 
-              alignItems: 'center',
-              shadowColor: '#4F47E5',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.2,
-              shadowRadius: 8,
-              elevation: 4
-            }}
-          >
-            <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 16, fontFamily: 'Figtree_700Bold' }}>Grant Permission</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+
+          <View style={styles.content}>
+            <View style={styles.iconContainer}>
+              <CameraOff size={48} color="#64748b" />
+            </View>
+
+            <Text style={styles.title}>Camera Access Required</Text>
+            
+            <Text style={styles.description}>
+              To scan grocery receipts and track your pantry, we need access to your camera.
+            </Text>
+
+            <TouchableOpacity 
+              onPress={handlePermissionRequest}
+              activeOpacity={0.9}
+              style={styles.primaryButton}
+            >
+              <Text style={styles.buttonText}>
+                {permission.canAskAgain ? "Allow Camera Access" : "Open Settings"}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={handleClose} style={styles.secondaryButton}>
+              <Text style={styles.secondaryButtonText}>Not now</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </View>
     );
   }
 
-  const handleCapture = async () => {
-    if (!cameraRef.current || scanState === 'processing') return;
-
-    setScanState('processing');
-    try {
-      const photo = await cameraRef.current.takePictureAsync({
-        quality: 1,
-      });
-
-      if (!photo) throw new Error("Failed to capture image");
-
-      const manipulatedImage = await ImageManipulator.manipulateAsync(
-        photo.uri,
-        [{ resize: { width: 1080 } }],
-        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-      );
-
-      const formData = new FormData();
-      formData.append('file', {
-        uri: manipulatedImage.uri,
-        name: 'receipt.jpg',
-        type: 'image/jpeg',
-      } as any);
-
-      const response = await client.post<ExtractionResponse>('/v1/extract', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        timeout: 120000,
-      });
-
-      setScanResults(response.data);
-      setScanState('success');
-      
-      Toast.show({
-        type: 'success',
-        text1: 'Scan Complete',
-        text2: 'AI has successfully extracted your items.',
-      });
-    } catch (error: any) {
-      console.error("[SCAN] Error:", error);
-      setScanState('idle');
-      
-      const errorMessage = error.response?.data?.detail || "Failed to analyze receipt. Please try again.";
-      Toast.show({
-        type: 'error',
-        text1: 'Scanning Failed',
-        text2: errorMessage,
-      });
-    }
-  };
-
-  const handleClose = () => {
-    navigation.navigate('Dashboard');
-  };
-
-  const resetScan = () => {
-    setScanResults(null);
-    setScanState('idle');
-  };
-
-  const navigateToPantry = () => {
-    setScanResults(null);
-    setScanState('idle');
-    navigation.navigate('Pantry');
-  };
-
   return (
-    <View style={{ flex: 1, backgroundColor: '#000000' }}>
+    <View style={{ flex: 1, backgroundColor: 'black' }}>
       <StatusBar barStyle="light-content" />
-      <CameraView 
-        ref={cameraRef}
-        style={{ flex: 1 }}
-        facing="back"
-        enableTorch={flashMode}
-      >
+
+      {isFocused && scanState !== 'success' && (
+        <CameraView
+          ref={cameraRef}
+          style={StyleSheet.absoluteFill}
+          facing="back"
+          enableTorch={flashMode}
+        />
+      )}
+
+      {scanState === 'idle' && (
         <CameraOverlay 
           onClose={handleClose}
           onCapture={handleCapture}
           flashMode={flashMode}
           onToggleFlash={() => setFlashMode(!flashMode)}
         />
+      )}
 
-        {scanState === 'processing' && <ProcessingState />}
-        
-        {scanState === 'success' && scanResults && (
-          <SuccessSummary 
-            itemCount={scanResults.saved_items.length}
-            onScanAnother={resetScan}
-            onViewPantry={navigateToPantry}
-          />
-        )}
-      </CameraView>
+      {scanState === 'processing' && <ProcessingState />}
+
+      {scanState === 'success' && scannedData && (
+        <SuccessSummary 
+          data={scannedData} 
+          onDone={() => {
+            setScanState('idle');
+            navigation.navigate('Pantry');
+          }} 
+        />
+      )}
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  permissionContainer: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  header: {
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  content: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    marginTop: -40, // Offset for header height
+  },
+  iconContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 24,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 32,
+  },
+  title: {
+    fontSize: 28,
+    fontFamily: 'Figtree_700Bold',
+    color: '#0f172a',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  description: {
+    fontSize: 16,
+    fontFamily: 'Figtree_400Regular',
+    color: '#64748b',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 48,
+  },
+  primaryButton: {
+    width: '100%',
+    height: 60,
+    backgroundColor: '#4F47E5',
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#4F47E5',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  buttonText: {
+    fontSize: 18,
+    fontFamily: 'Figtree_600SemiBold',
+    color: '#ffffff',
+  },
+  secondaryButton: {
+    marginTop: 20,
+    paddingVertical: 12,
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontFamily: 'Figtree_500Medium',
+    color: '#94a3b8',
+  },
+});
 
 export default ScanScreen;

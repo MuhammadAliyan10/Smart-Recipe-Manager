@@ -5,7 +5,11 @@ import { useAuth } from '../../context/AuthContext';
 import { ShoppingBag } from 'lucide-react-native';
 import ScreenHeader from '../ui/ScreenHeader';
 
-const DashboardHeader = () => {
+interface DashboardHeaderProps {
+  totalItems: number;
+}
+
+const DashboardHeader: React.FC<DashboardHeaderProps> = ({ totalItems }) => {
   const { user } = useAuth();
   
   const getGreeting = () => {
@@ -38,7 +42,7 @@ const DashboardHeader = () => {
           fontFamily: 'Figtree_700Bold'
         }}
       >
-        12 Items
+        {totalItems} {totalItems === 1 ? 'Item' : 'Items'}
       </Text>
     </View>
   );
