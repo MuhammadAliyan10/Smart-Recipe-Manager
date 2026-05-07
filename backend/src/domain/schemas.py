@@ -40,6 +40,11 @@ class IngredientBase(BaseModel):
 class IngredientCreate(IngredientBase):
     pass
 
+class IngredientManualCreate(BaseModel):
+    name: str
+    quantity: str
+    category: str
+
 class IngredientResponse(IngredientBase):
     id: int
     created_at: datetime
@@ -55,12 +60,47 @@ class PersistenceResponse(BaseModel):
 
 # --- Recipe Schemas ---
 
+class RecipeSubstitute(BaseModel):
+    original: str
+    substitute: str
+    model_config = ConfigDict(from_attributes=True)
+
 class Recipe(BaseModel):
+    id: Optional[int] = None
     title: str = Field(..., description="Appealing title of the recipe")
-    matchPercentage: int = Field(..., description="How well this recipe matches user ingredients (0-100)")
+    match_percentage: int = Field(..., alias="matchPercentage", description="How well this recipe matches user ingredients (0-100)")
     time: str = Field(..., description="Prep and cook time (e.g., '25 min')")
     calories: str = Field(..., description="Estimated calories per serving")
     ingredients: List[str] = Field(..., description="List of key ingredient names used")
+    instructions: List[str] = Field(..., description="Step-by-step cooking instructions")
+    missing_ingredients: List[str] = Field(default_factory=list, description="Ingredients the user is missing or has insufficient quantity of")
+    substitutes: List[RecipeSubstitute] = Field(default_factory=list, description="Suggested ingredient substitutes")
+    created_at: Optional[datetime] = None
+    
+    model_config = ConfigDict(
+        from_attributes=True,
+        populate_by_name=True
+    )
 
 class RecipeListResponse(BaseModel):
     recipes: List[Recipe]
+
+class RecipeGenerationRequest(BaseModel):
+    preferences: Optional[str] = Field(None, description="Optional user preferences for recipe generation")
+
+# --- Shopping List Schemas ---
+
+class ShoppingItemBase(BaseModel):
+    name: str
+    is_purchased: bool = False
+
+class ShoppingItemCreate(BaseModel):
+    names: List[str]
+
+class ShoppingItemResponse(ShoppingItemBase):
+    id: int
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+class ShoppingItemUpdate(BaseModel):
+    is_purchased: bool

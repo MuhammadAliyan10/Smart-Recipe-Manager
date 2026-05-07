@@ -14,6 +14,9 @@ import { useAuth } from '../context/AuthContext';
 import LoginScreen from '../screens/auth/LoginScreen';
 import SignupScreen from '../screens/auth/SignupScreen';
 import MainTabs from './MainTabs';
+import RecipeDetailScreen from '../screens/RecipeDetailScreen';
+import ShoppingListScreen from '../screens/ShoppingListScreen';
+import CookingModeScreen from '../screens/CookingModeScreen';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -78,7 +81,32 @@ const AppNavigator = () => {
         {userToken == null ? (
           <RootStack.Screen name="Auth" component={AuthNavigator} />
         ) : (
-          <RootStack.Screen name="Main" component={MainTabs} />
+          <>
+            <RootStack.Screen name="Main" component={MainTabs} />
+            <RootStack.Screen 
+              name="RecipeDetail" 
+              component={RecipeDetailScreen} 
+              options={{ 
+                presentation: 'modal',
+                animation: 'slide_from_bottom'
+              }} 
+            />
+            <RootStack.Screen 
+              name="ShoppingList" 
+              component={ShoppingListScreen} 
+              options={{ 
+                animation: 'slide_from_right'
+              }} 
+            />
+            <RootStack.Screen 
+              name="CookingMode" 
+              component={CookingModeScreen} 
+              options={{ 
+                presentation: 'fullScreenModal',
+                animation: 'fade_from_bottom'
+              }} 
+            />
+          </>
         )}
       </RootStack.Navigator>
     </View>

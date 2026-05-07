@@ -12,7 +12,6 @@ export interface IngredientItem {
 
 /**
  * Fetches the user's ingredient history from the backend.
- * This represents the active inventory/pantry data.
  */
 export const fetchPantryItems = async (): Promise<IngredientItem[]> => {
   try {
@@ -22,6 +21,32 @@ export const fetchPantryItems = async (): Promise<IngredientItem[]> => {
     return response.data;
   } catch (error) {
     console.error("[API] Failed to fetch pantry items:", error);
+    throw error;
+  }
+};
+
+/**
+ * Manually adds a single item to the pantry.
+ */
+export const addPantryItem = async (data: Omit<IngredientItem, 'id' | 'confidence_score' | 'created_at'>): Promise<IngredientItem> => {
+  try {
+    const response = await client.post<IngredientItem>('/v1/ingredients', data);
+    return response.data;
+  } catch (error) {
+    console.error("[API] Failed to add pantry item:", error);
+    throw error;
+  }
+};
+
+/**
+ * Updates an existing pantry item.
+ */
+export const updatePantryItem = async (id: number, data: Partial<IngredientItem>): Promise<IngredientItem> => {
+  try {
+    const response = await client.put<IngredientItem>(`/v1/ingredients/${id}`, data);
+    return response.data;
+  } catch (error) {
+    console.error(`[API] Failed to update item ${id}:`, error);
     throw error;
   }
 };

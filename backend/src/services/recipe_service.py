@@ -1,6 +1,6 @@
 import os
 import json
-from typing import List
+from typing import List, Optional
 from openai import OpenAI
 from src.domain.schemas import RecipeListResponse
 
@@ -17,18 +17,39 @@ class RecipeGenerationEngine:
         )
         self.model = "meta/llama-3.1-70b-instruct"
 
-    def generate_recipes(self, available_ingredients: List[str]) -> RecipeListResponse:
+    def generate_recipes(self, available_ingredients: List[str], preferences: Optional[str] = None) -> RecipeListResponse:
         """
-        Generates 3 recipes based on provided ingredients using Llama 3.1 70B on NIM.
+        Generates 3 recipes based on provided ingredients and optional user preferences.
         """
         ingredients_str = ", ".join(available_ingredients)
         
+        preference_clause = f"The user has the following preferences: {preferences}. " if preferences else ""
+
         system_prompt = (
             "You are an expert culinary AI. You will be provided with a list of ingredients currently in the user's pantry. "
             "Your task is to generate 3 highly appealing recipes that maximize the use of these ingredients. "
+            f"{preference_clause}"
             "You may assume the user has basic pantry staples (salt, pepper, oil, water, flour, sugar). "
+            "You must compare the required ingredients and quantities for each recipe against the user's provided pantry list. "
+            "If the user is entirely missing an ingredient, OR if they do not have enough quantity (e.g., they have 2 eggs but the recipe needs 4), "
+            "you MUST list that specific item and the missing amount in the missing_ingredients array (e.g., '2 Eggs'). "
+            "If they have everything needed, return an empty array []. "
+            "For each recipe, include step-by-step cooking instructions and suggested ingredient substitutes if applicable. "
             "You MUST output valid JSON conforming exactly to this structure: "
-            "{ \"recipes\": [ { \"title\": \"...\", \"matchPercentage\": 90, \"time\": \"20 min\", \"calories\": \"400 kcal\", \"ingredients\": [\"item1\", \"item2\"] } ] }. "
+            "{ "
+            "  \"recipes\": [ "
+            "    { "
+            "      \"title\": \"...\", "
+            "      \"matchPercentage\": 90, "
+            "      \"time\": \"20 min\", "
+            "      \"calories\": \"400 kcal\", "
+            "      \"ingredients\": [\"item1\", \"item2\"], "
+            "      \"instructions\": [\"Step 1...\", \"Step 2...\"], "
+            "      \"missing_ingredients\": [\"2 Eggs\", \"500g Chicken\"], "
+            "      \"substitutes\": [{\"original\": \"Milk\", \"substitute\": \"Almond Milk\"}] "
+            "    } "
+            "  ] "
+            "}. "
             "No markdown formatting, no conversational text, no explanations. Only raw JSON."
         )
 
@@ -42,7 +63,7 @@ class RecipeGenerationEngine:
                     {"role": "user", "content": user_prompt}
                 ],
                 temperature=0.7,
-                max_tokens=1500,
+                max_tokens=2500,
                 response_format={"type": "json_object"}
             )
 

@@ -9,7 +9,8 @@ import {
   Leaf, 
   Coffee,
   LucideIcon,
-  Trash2
+  Trash2,
+  Pencil
 } from 'lucide-react-native';
 
 interface PantryItemCardProps {
@@ -18,6 +19,7 @@ interface PantryItemCardProps {
   quantity: string;
   category: string;
   onDelete?: (id: number | string) => void;
+  onEdit?: () => void;
 }
 
 const getCategoryIcon = (category: string): LucideIcon => {
@@ -30,7 +32,7 @@ const getCategoryIcon = (category: string): LucideIcon => {
   return Package;
 };
 
-const PantryItemCard: React.FC<PantryItemCardProps> = ({ id, name, quantity, category, onDelete }) => {
+const PantryItemCard: React.FC<PantryItemCardProps> = ({ id, name, quantity, category, onDelete, onEdit }) => {
   const Icon = getCategoryIcon(category);
 
   const confirmDelete = () => {
@@ -72,12 +74,21 @@ const PantryItemCard: React.FC<PantryItemCardProps> = ({ id, name, quantity, cat
           {quantity}
         </Text>
         
-        <TouchableOpacity 
-          onPress={confirmDelete}
-          className="p-2 -mr-2"
-        >
-          <Trash2 size={18} color="#ef4444" />
-        </TouchableOpacity>
+        <View className="flex-row items-center gap-x-2">
+          <TouchableOpacity 
+            onPress={onEdit}
+            className="p-2"
+          >
+            <Pencil size={18} color="#64748b" />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            onPress={confirmDelete}
+            className="p-2 -mr-2"
+          >
+            <Trash2 size={18} color="#ef4444" />
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );

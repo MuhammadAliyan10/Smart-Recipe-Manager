@@ -1,6 +1,7 @@
 // src/screens/DashboardScreen.tsx
 import React, { useState, useCallback, useMemo } from 'react';
-import { ScrollView, View, SafeAreaView, StatusBar, Platform, RefreshControl } from 'react-native';
+import { ScrollView, View, StatusBar, Platform, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { fetchPantryItems, IngredientItem } from '../api/pantry';
 
