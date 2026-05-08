@@ -38,11 +38,10 @@ async def value_error_exception_handler(request: Request, exc: ValueError):
         content={"detail": str(exc)},
     )
 
-# Configure CORS for production
-allowed_origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
+# Configure CORS for production troubleshooting
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

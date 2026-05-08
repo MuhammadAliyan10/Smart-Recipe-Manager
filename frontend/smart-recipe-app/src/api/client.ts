@@ -10,15 +10,8 @@ import Toast from 'react-native-toast-message';
  * We use the host debugger address to point back to your computer.
  */
 const getBaseUrl = () => {
-  const debuggerHost = Constants.expoConfig?.hostUri;
-  const localhost = debuggerHost?.split(':').shift();
-  
-  if (localhost) {
-    return `http://${localhost}:8000`;
-  }
-  
-  // Fallback for web or production
-  return 'http://localhost:8000';
+  // Use Production Railway URL for all environments to troubleshoot
+  return 'https://smart-recipe-manager-production.up.railway.app';
 };
 
 const client = axios.create({

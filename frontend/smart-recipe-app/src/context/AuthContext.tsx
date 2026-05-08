@@ -58,7 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const storedToken = await AsyncStorage.getItem('userToken');
         
         if (storedToken) {
-          console.log("[BOOT] Token found. Restoring session.");
+          if (__DEV__) console.log("[BOOT] Token found. Restoring session.");
           setUserToken(storedToken);
           // Attempt to load profile, but don't block boot if it's just a network error
           try {
@@ -67,7 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.warn("[BOOT] Profile sync failed, but session kept.");
           }
         } else {
-          console.log("[BOOT] No token found. Routing to Auth.");
+          if (__DEV__) console.log("[BOOT] No token found. Routing to Auth.");
         }
       } catch (error) {
         console.error("[BOOT] Session restoration critical failure:", error);
@@ -98,7 +98,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUserToken(access_token);
       await fetchUserProfile(access_token);
       
-      console.log("[AUTH] ChefSync login successful. Session persisted.");
+      if (__DEV__) console.log("[AUTH] ChefSync login successful. Session persisted.");
     } catch (error: any) {
       const detail = error.response?.data?.detail;
       const message = typeof detail === 'string' ? detail : 'Invalid email or password.';
@@ -115,12 +115,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         full_name: fullName,
       });
 
-      console.log("[AUTH] Registration successful. Triggering auto-login.");
+      if (__DEV__) console.log("[AUTH] Registration successful. Triggering auto-login.");
       await login(email, password);
     } catch (error: any) {
       const detail = error.response?.data?.detail;
       const message = typeof detail === 'string' ? detail : 'Could not create account.';
-      console.error('[AUTH] Registration error:', message);
+      if (__DEV__) console.error('[AUTH] Registration error:', message);
       throw new Error(message);
     }
   };
@@ -130,7 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await AsyncStorage.removeItem('userToken');
       setUserToken(null);
       setUser(null);
-      console.log("[AUTH] Session cleared.");
+      if (__DEV__) console.log("[AUTH] Session cleared.");
     } catch (error) {
       console.error('[AUTH] Logout failed:', error);
     }
