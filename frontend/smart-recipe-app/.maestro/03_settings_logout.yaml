@@ -1,0 +1,7 @@
+appId: com.chefsync.app
+---
+- launchApp
+- tapOn: "Settings"
+- scroll
+- tapOn: "Log Out"
+- assertVisible: "Welcome Back"

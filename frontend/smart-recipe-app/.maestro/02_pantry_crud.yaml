@@ -1,0 +1,12 @@
+appId: com.chefsync.app
+---
+- launchApp
+- tapOn: "Pantry"
+- tapOn:
+    id: "add-button" # Assuming the floating action button has this ID or we can tap by icon/text
+- tapOn: "Name"
+- inputText: "Test Apple"
+- tapOn: "Quantity"
+- inputText: "3"
+- tapOn: "Save"
+- assertVisible: "Test Apple"

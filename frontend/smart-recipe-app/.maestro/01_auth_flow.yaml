@@ -1,0 +1,9 @@
+appId: com.chefsync.app
+---
+- launchApp
+- tapOn: "Email Address"
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "SecurePass123!"
+- tapOn: "Log In"
+- assertVisible: "ChefSync, .*"
