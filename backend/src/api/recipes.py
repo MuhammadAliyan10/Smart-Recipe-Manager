@@ -1,18 +1,23 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from typing import List
+import logging
 from src.core.database import get_db
 from src.core.security import get_current_user
 from src.domain.models import User, IngredientItem, SavedRecipe
 from src.domain.schemas import RecipeListResponse, RecipeGenerationRequest, Recipe as RecipeSchema
 from src.services.recipe_service import RecipeGenerationEngine
+from src.core.ratelimit import limiter
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/v1/recipes", tags=["recipes"])
 engine = RecipeGenerationEngine()
 
 @router.post("/generate", response_model=RecipeListResponse)
+@limiter.limit("5/minute")
 async def generate_ai_recipes(
-    request: RecipeGenerationRequest = None,
+    request: Request,
+    payload: RecipeGenerationRequest = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -32,7 +37,7 @@ async def generate_ai_recipes(
         )
 
     ingredient_names = [f"{ing.name} ({ing.quantity})" for ing in ingredients]
-    preferences = request.preferences if request else None
+    preferences = payload.preferences if payload else None
 
     try:
         # 2. Generate recipes via NIM Engine
@@ -43,7 +48,7 @@ async def generate_ai_recipes(
         for r in result.recipes:
             new_recipe = SavedRecipe(
                 title=r.title,
-                match_percentage=r.matchPercentage,
+                match_percentage=r.match_percentage,
                 time=r.time,
                 calories=r.calories,
                 ingredients=r.ingredients,
@@ -52,14 +57,16 @@ async def generate_ai_recipes(
                 substitutes=[s.model_dump() for s in r.substitutes],
                 user_id=current_user.id
             )
-            db.add(new_recipe)
             saved_objs.append(new_recipe)
         
-        db.commit()
+        db.add_all(saved_objs)
+        db.flush()
         
         # 4. Refresh to get IDs/dates and return
         for obj in saved_objs:
             db.refresh(obj)
+            
+        db.commit()
             
         return RecipeListResponse(
             recipes=[RecipeSchema.model_validate(obj) for obj in saved_objs]
@@ -67,9 +74,10 @@ async def generate_ai_recipes(
 
     except Exception as e:
         db.rollback()
+        logger.error(f"Error: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500, 
-            detail=f"AI Recipe Generation failed: {str(e)}"
+            detail="An internal error occurred. Please try again later."
         )
 
 @router.get("/history", response_model=RecipeListResponse)
@@ -82,11 +90,13 @@ async def get_recipe_history(
     """
     Retrieves all previously generated recipes for the current user.
     """
+    safe_limit = min(limit, 100)
+    safe_offset = max(offset, 0)
     recipes = db.query(SavedRecipe)\
         .filter(SavedRecipe.user_id == current_user.id)\
         .order_by(SavedRecipe.created_at.desc())\
-        .limit(limit)\
-        .offset(offset)\
+        .limit(safe_limit)\
+        .offset(safe_offset)\
         .all()
     
     return RecipeListResponse(

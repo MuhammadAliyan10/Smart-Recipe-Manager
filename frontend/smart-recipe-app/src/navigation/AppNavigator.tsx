@@ -18,6 +18,9 @@ import RecipeDetailScreen from '../screens/RecipeDetailScreen';
 import ShoppingListScreen from '../screens/ShoppingListScreen';
 import CookingModeScreen from '../screens/CookingModeScreen';
 import RecipeFormScreen from '../screens/RecipeFormScreen';
+import EditProfileScreen from '../screens/settings/EditProfileScreen';
+import ChangePasswordScreen from '../screens/settings/ChangePasswordScreen';
+import PrivacySecurityScreen from '../screens/settings/PrivacySecurityScreen';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -95,6 +98,20 @@ const AppNavigator = () => {
               name="RecipeForm" 
               component={RecipeFormScreen} 
               options={{ presentation: 'modal' }} 
+            />
+            <RootStack.Screen 
+              name="EditProfile" 
+              component={EditProfileScreen} 
+              options={{ presentation: 'modal' }} 
+            />
+            <RootStack.Screen 
+              name="ChangePassword" 
+              component={ChangePasswordScreen} 
+              options={{ presentation: 'modal' }} 
+            />
+            <RootStack.Screen 
+              name="PrivacySecurity" 
+              component={PrivacySecurityScreen} 
             />
           </>
         )}

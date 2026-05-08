@@ -53,15 +53,18 @@ const PantryScreen = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Deep Link Handling
-  useEffect(() => {
-    if (route.params?.action === 'openManualAdd') {
-      setSelectedItem(null);
-      setIsModalVisible(true);
-      navigation.setParams({ action: undefined });
-    }
-  }, [route.params?.action]);
+  useFocusEffect(
+    useCallback(() => {
+      if (route.params?.action === 'openManualAdd') {
+        setSelectedItem(null);
+        setIsModalVisible(true);
+        navigation.setParams({ action: undefined });
+      }
+    }, [route.params?.action])
+  );
 
   const loadPantry = useCallback(async (reset = false) => {
+    let isMounted = true;
     if (reset) {
       setIsRefreshing(true);
       setPage(0);
@@ -75,35 +78,41 @@ const PantryScreen = () => {
       const skip = reset ? 0 : page * PAGE_SIZE;
       const data = await fetchPantryItems(skip, PAGE_SIZE);
       
-      if (reset) {
-        setItems(data);
-      } else {
-        setItems(prev => [...prev, ...data]);
-      }
+      if (isMounted) {
+        if (reset) {
+          setItems(data);
+        } else {
+          setItems(prev => [...prev, ...data]);
+        }
 
-      if (data.length < PAGE_SIZE) {
-        setHasMore(false);
+        if (data.length < PAGE_SIZE) {
+          setHasMore(false);
+        }
+        
+        if (!reset) setPage(prev => prev + 1);
       }
-      
-      if (!reset) setPage(prev => prev + 1);
 
     } catch (err: any) {
-      setError("Failed to synchronize pantry.");
+      if (isMounted) setError("Failed to synchronize pantry.");
       console.error("[PANTRY] Load error:", err);
     } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-      setIsFetchingMore(false);
+      if (isMounted) {
+        setIsLoading(false);
+        setIsRefreshing(false);
+        setIsFetchingMore(false);
+      }
     }
+    return () => { isMounted = false; };
   }, [page]);
 
   useFocusEffect(
     useCallback(() => {
-      // Re-fetch only if items are empty to avoid resetting scroll position on tab switch
+      let isMounted = true;
       if (items.length === 0) {
         loadPantry(true);
       }
-    }, [])
+      return () => { isMounted = false; };
+    }, [items.length, loadPantry])
   );
 
   const loadMore = () => {
@@ -117,24 +126,28 @@ const PantryScreen = () => {
   };
 
   const handleDelete = async (id: number | string) => {
-    const previousItems = [...items];
-    setItems(items.filter(item => item.id !== id));
+    setItems(currentItems => {
+      const itemToDelete = currentItems.find(i => i.id === id);
+      if (!itemToDelete) return currentItems;
 
-    try {
-      await deletePantryItem(id);
-      Toast.show({
-        type: 'success',
-        text1: 'Item Removed',
-        text2: 'Pantry inventory updated successfully.',
+      deletePantryItem(id).then(() => {
+        Toast.show({
+          type: 'success',
+          text1: 'Item Removed',
+          text2: 'Pantry inventory updated successfully.',
+        });
+      }).catch(() => {
+        // Safe rollback: re-insert ONLY the failed item
+        setItems(rollbackItems => [...rollbackItems, itemToDelete]);
+        Toast.show({
+          type: 'error',
+          text1: 'Delete Failed',
+          text2: 'Could not remove item. Please try again.',
+        });
       });
-    } catch (err) {
-      setItems(previousItems);
-      Toast.show({
-        type: 'error',
-        text1: 'Delete Failed',
-        text2: 'Could not remove item. Please try again.',
-      });
-    }
+
+      return currentItems.filter(item => item.id !== id);
+    });
   };
 
   const handleFormSubmit = async (formData: any) => {

@@ -25,12 +25,21 @@ const ScanScreen = () => {
   const cameraRef = useRef<any>(null);
 
   // State Management
+  const [cameraActive, setCameraActive] = useState(false);
   const [scanState, setScanState] = useState<ScanState>('idle');
   const [flashMode, setFlashMode] = useState(false);
   const [scannedData, setScannedData] = useState<ExtractionResponse | null>(null);
 
+  useFocusEffect(
+    useCallback(() => {
+      setCameraActive(true);
+      return () => setCameraActive(false);
+    }, [])
+  );
+
   const handleCapture = async () => {
     if (!cameraRef.current || scanState !== 'idle') return;
+    let isMounted = true;
 
     try {
       setScanState('processing');
@@ -47,18 +56,23 @@ const ScanScreen = () => {
       );
 
       const result = await uploadReceipt(manipResult.uri);
-      setScannedData(result);
-      setScanState('success');
+      if (isMounted) {
+        setScannedData(result);
+        setScanState('success');
+      }
       
     } catch (error: any) {
       console.error("[SCAN] Workflow failure:", error);
-      Toast.show({
-        type: 'error',
-        text1: 'Scan Failed',
-        text2: error.response?.data?.detail || 'Failed to analyze receipt.',
-      });
-      setScanState('idle');
+      if (isMounted) {
+        Toast.show({
+          type: 'error',
+          text1: 'Scan Failed',
+          text2: error.response?.data?.detail || 'Failed to analyze receipt.',
+        });
+        setScanState('idle');
+      }
     }
+    return () => { isMounted = false; };
   };
 
   const handleClose = () => {
@@ -123,7 +137,7 @@ const ScanScreen = () => {
     <View style={{ flex: 1, backgroundColor: 'black' }}>
       <StatusBar barStyle="light-content" />
 
-      {isFocused && scanState !== 'success' && (
+      {cameraActive && scanState !== 'success' && (
         <CameraView
           ref={cameraRef}
           style={StyleSheet.absoluteFill}

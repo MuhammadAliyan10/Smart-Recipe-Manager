@@ -1,8 +1,11 @@
 import requests
 import json
+import logging
 from src.core.config import config
 from src.domain.schemas import ExtractionResult
 from src.utils.encoding import encode_image
+
+logger = logging.getLogger(__name__)
 
 class ImageExtractionEngine:
     """
@@ -24,31 +27,7 @@ class ImageExtractionEngine:
         
         system_instructions = """
 You are a strict data extraction engine. Your ONLY objective is to extract food ingredients, quantities, and categories from images and output them in valid JSON.
-
-CRITICAL RULES:
-1. You MUST use the exact JSON keys provided in the example below. Do not invent new keys (e.g., use "name", NEVER use "item").
-2. You MUST provide a "confidence_score" (float between 0.0 and 1.0) for every ingredient.
-3. Separate weights/volumes from the product name. If the receipt says "GREEK YOGURT 320Z", the name is "GREEK YOGURT" and the quantity is "320Z".
-4. If the image contains no food or receipts, return an empty "ingredients" list [].
-5. OUTPUT ONLY RAW JSON. No markdown formatting (e.g., do not use ```json).
-
-EXPECTED EXACT SCHEMA FORMAT:
-{
-  "ingredients": [
-    {
-      "name": "string",
-      "quantity": "string",
-      "category": "string",
-      "confidence_score": 0.95
-    }
-  ],
-  "unrecognized_text": "string"
-}
-
-STRICT CATEGORY ENFORCEMENT:
-For each item's 'category', you MUST strictly choose ONLY from this exact list: ['Produce', 'Dairy', 'Protein', 'Pantry', 'Spices', 'Snacks', 'Beverages', 'Other']. Do not invent new categories.
 """
-
         payload = {
             "model": config.VISION_MODEL,
             "messages": [
@@ -87,9 +66,9 @@ For each item's 'category', you MUST strictly choose ONLY from this exact list: 
                 extraction = ExtractionResult.model_validate_json(clean_json)
                 return extraction
             except Exception as ve:
-                raise ValueError(f"SCHEMA VALIDATION FAILED: {ve}. Raw Content: {raw_content}")
+                logger.error(f"Error: {str(ve)}", exc_info=True)
+                raise ValueError("SCHEMA VALIDATION FAILED")
 
-        except requests.exceptions.RequestException as e:
-            raise RuntimeError(f"API NETWORK FAILURE: {str(e)}")
         except Exception as e:
-            raise RuntimeError(f"DATA PROCESSING FAILURE: {str(e)}")
+            logger.error(f"Error: {str(e)}", exc_info=True)
+            raise RuntimeError("An internal error occurred. Please try again later.")

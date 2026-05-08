@@ -18,11 +18,13 @@ def read_ingredient_history(
     """
     Returns ingredient records belonging strictly to the authenticated user.
     """
+    safe_limit = min(limit, 100)
+    safe_offset = max(offset, 0)
     history = db.query(IngredientItem)\
         .filter(IngredientItem.user_id == current_user.id)\
         .order_by(IngredientItem.created_at.desc())\
-        .limit(limit)\
-        .offset(offset)\
+        .limit(safe_limit)\
+        .offset(safe_offset)\
         .all()
     return history
 

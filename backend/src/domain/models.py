@@ -20,9 +20,9 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
-    ingredients = relationship("IngredientItem", back_populates="owner")
-    recipes = relationship("SavedRecipe", back_populates="owner")
-    shopping_list = relationship("ShoppingItem", back_populates="owner")
+    ingredients = relationship("IngredientItem", back_populates="owner", cascade="all, delete-orphan")
+    recipes = relationship("SavedRecipe", back_populates="owner", cascade="all, delete-orphan")
+    shopping_list = relationship("ShoppingItem", back_populates="owner", cascade="all, delete-orphan")
 
 class IngredientItem(Base):
     """

@@ -9,6 +9,7 @@ interface SettingRowProps {
   value?: string;
   onPress?: () => void;
   danger?: boolean;
+  rightElement?: React.ReactNode;
 }
 
 const SettingRow: React.FC<SettingRowProps> = ({ 
@@ -16,14 +17,16 @@ const SettingRow: React.FC<SettingRowProps> = ({
   title, 
   value, 
   onPress, 
-  danger = false 
+  danger = false,
+  rightElement
 }) => {
   return (
     <Pressable 
       onPress={onPress}
+      disabled={!!rightElement && !onPress}
       className="bg-card"
       style={({ pressed }) => ({
-        opacity: pressed ? 0.6 : 1,
+        opacity: (pressed && onPress) ? 0.6 : 1,
       })}
     >
       <View className="flex-row items-center px-6 py-4 border-b border-border/40">
@@ -40,12 +43,18 @@ const SettingRow: React.FC<SettingRowProps> = ({
         </View>
 
         <View className="flex-row items-center">
-          {value && (
-            <Text className="text-xs font-sans-medium text-muted-foreground mr-2">
-              {value}
-            </Text>
+          {rightElement ? (
+            rightElement
+          ) : (
+            <>
+              {value && (
+                <Text className="text-xs font-sans-medium text-muted-foreground mr-2">
+                  {value}
+                </Text>
+              )}
+              {!danger && <ChevronRight size={14} color="#cbd5e1" />}
+            </>
           )}
-          {!danger && <ChevronRight size={14} color="#cbd5e1" />}
         </View>
       </View>
     </Pressable>

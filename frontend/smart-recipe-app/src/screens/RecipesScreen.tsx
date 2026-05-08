@@ -37,6 +37,7 @@ const RecipesScreen = () => {
   const [hasMore, setHasMore] = useState(true);
 
   const loadRecipes = useCallback(async (reset = false) => {
+    let isMounted = true;
     if (reset) {
       setIsRefreshing(true);
       setPage(0);
@@ -49,33 +50,40 @@ const RecipesScreen = () => {
       const skip = reset ? 0 : page * PAGE_SIZE;
       const data = await getRecipeHistory(skip, PAGE_SIZE);
       
-      if (reset) {
-        setRecipes(data);
-      } else {
-        setRecipes(prev => [...prev, ...data]);
-      }
+      if (isMounted) {
+        if (reset) {
+          setRecipes(data);
+        } else {
+          setRecipes(prev => [...prev, ...data]);
+        }
 
-      if (data.length < PAGE_SIZE) {
-        setHasMore(false);
+        if (data.length < PAGE_SIZE) {
+          setHasMore(false);
+        }
+        
+        if (!reset) setPage(prev => prev + 1);
       }
-      
-      if (!reset) setPage(prev => prev + 1);
     } catch (error) {
       console.error("[RECIPES] Fetch failed:", error);
-      Toast.show({ type: 'error', text1: 'Sync Failed', text2: 'Could not load your recipes.' });
+      if (isMounted) Toast.show({ type: 'error', text1: 'Sync Failed', text2: 'Could not load your recipes.' });
     } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-      setIsFetchingMore(false);
+      if (isMounted) {
+        setIsLoading(false);
+        setIsRefreshing(false);
+        setIsFetchingMore(false);
+      }
     }
+    return () => { isMounted = false; };
   }, [page]);
 
   useFocusEffect(
     useCallback(() => {
+      let isMounted = true;
       if (recipes.length === 0) {
         loadRecipes(true);
       }
-    }, [])
+      return () => { isMounted = false; };
+    }, [recipes.length, loadRecipes])
   );
 
   const loadMore = () => {
@@ -129,7 +137,7 @@ const RecipesScreen = () => {
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}
           ListHeaderComponent={
-            <View className="px-6 mb-6">
+            <View className="mb-6">
               <View className="bg-card border border-border rounded-3xl p-5 shadow-sm">
                 <View className="flex-row items-center mb-4">
                   <Search size={18} color="#64748b" />
@@ -156,7 +164,7 @@ const RecipesScreen = () => {
           refreshControl={
             <RefreshControl refreshing={isRefreshing} onRefresh={() => loadRecipes(true)} tintColor="#4F47E5" />
           }
-          contentContainerStyle={{ paddingBottom: 120 }}
+          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 120 }}
           showsVerticalScrollIndicator={false}
         />
 

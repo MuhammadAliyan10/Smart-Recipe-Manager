@@ -22,6 +22,10 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     pfp_url: Optional[str] = None
 
+class PasswordUpdate(BaseModel):
+    current_password: str
+    new_password: str = Field(..., min_length=8)
+
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -41,9 +45,9 @@ class IngredientCreate(IngredientBase):
     pass
 
 class IngredientManualCreate(BaseModel):
-    name: str
-    quantity: str
-    category: str
+    name: str = Field(..., min_length=1, max_length=100)
+    quantity: str = Field(..., min_length=1, max_length=100)
+    category: str = Field(..., pattern="^(Produce|Dairy|Protein|Pantry|Spices|Snacks|Beverages|Other)$")
 
 class IngredientResponse(IngredientBase):
     id: int
@@ -67,10 +71,10 @@ class RecipeSubstitute(BaseModel):
 
 class Recipe(BaseModel):
     id: Optional[int] = None
-    title: str = Field(..., description="Appealing title of the recipe")
-    match_percentage: int = Field(..., alias="matchPercentage", description="How well this recipe matches user ingredients (0-100)")
-    time: str = Field(..., description="Prep and cook time (e.g., '25 min')")
-    calories: str = Field(..., description="Estimated calories per serving")
+    title: str = Field(..., min_length=1, max_length=200, description="Appealing title of the recipe")
+    match_percentage: int = Field(..., alias="matchPercentage", ge=0, le=100, description="How well this recipe matches user ingredients (0-100)")
+    time: str = Field(..., min_length=1, max_length=50, description="Prep and cook time (e.g., '25 min')")
+    calories: str = Field(..., min_length=1, max_length=50, description="Estimated calories per serving")
     ingredients: List[str] = Field(..., description="List of key ingredient names used")
     instructions: List[str] = Field(..., description="Step-by-step cooking instructions")
     missing_ingredients: Optional[List[str]] = Field(default_factory=list, description="Ingredients the user is missing or has insufficient quantity of")
@@ -86,7 +90,7 @@ class RecipeListResponse(BaseModel):
     recipes: List[Recipe]
 
 class RecipeGenerationRequest(BaseModel):
-    preferences: Optional[str] = Field(None, description="Optional user preferences for recipe generation")
+    preferences: Optional[str] = Field(None, max_length=500, description="Optional user preferences for recipe generation")
 
 # --- Shopping List Schemas ---
 

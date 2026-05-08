@@ -20,7 +20,11 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
     >
       {/* Top Row: Title & Match */}
       <View className="flex-row justify-between items-start mb-4">
-        <Text className="text-foreground font-sans-bold text-lg flex-1 mr-4">
+        <Text 
+          numberOfLines={2} 
+          ellipsizeMode="tail"
+          className="text-foreground font-sans-bold text-lg flex-1 mr-4"
+        >
           {recipe.title}
         </Text>
         <View className="bg-primary/10 px-3 py-1 rounded-full border border-primary/20 flex-row items-center">
